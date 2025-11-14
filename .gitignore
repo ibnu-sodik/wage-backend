@@ -1,0 +1,24 @@
+.DS_Store
+
+# Node dependencies
+node_modules/
+
+# WhatsApp session files (kredensial)
+sessions/
+
+# Environment variables
+.env
+
+# Logs
+*.log
+logs/
+
+# OS & editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Build/output folders (jika ada)
+dist/
+build/

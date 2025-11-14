@@ -1,0 +1,13 @@
+{
+	"watch": [
+		"index.js",
+		"app.js",
+		"routes"
+	],
+	"ext": "js,json",
+	"ignore": [
+		"node_modules",
+		"sessions/*.json"
+	],
+	"exec": "node index.js"
+}
