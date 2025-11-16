@@ -81,23 +81,6 @@ router.get("/generate-qr", async (req, res) => {
 	});
 });
 
-// Send broadcast single item (templated)
-router.post('/send-broadcast-message', async (req, res) => {
-	const { bcdtid, nokey, sender, receiver, template, userid } = req.body;
-	const session = await startSession(sender, userid);
-	if (!session.connected) return res.status(400).json({ status: 'error', message: 'Device not connected' });
-	const [templateRows] = await db.query('SELECT TEMP_TYPE, TEMP_FILE, TEMP_MESSAGE, TEMP_BUTTONS FROM TEMPTBL WHERE ID = ? AND USER_ID = ?', [template, userid]);
-	if (!templateRows.length) return res.json({ receiver, status: 'failed', message: 'Template not found' });
-	const [receiverRows] = await db.query('SELECT CONTACT_NAME, CONTACT_NUMBER, DEVICE_NAME FROM BCDT WHERE ID = ? AND NOKEY = ? AND USER_ID = ?', [bcdtid, nokey, userid]);
-	if (!receiverRows.length) return res.json({ receiver, status: 'failed', message: 'Receiver data not found' });
-	const [senderRows] = await db.query("SELECT CONCAT(FIRST_NAME,' ', LAST_NAME) AS FULLNAME, EMAIL FROM SYSUSER WHERE ID = ?", [userid]);
-	if (!senderRows.length) return res.json({ receiver, status: 'failed', message: 'Sender data not found' });
-	try {
-		const sentMsg = await sendTemplatedMessage({ session, templateRow: templateRows[0], receiverRow: receiverRows[0], senderRow: senderRows[0], receiver, templateType: templateRows[0].TEMP_TYPE });
-		return res.json({ receiver, status: 'sent', messageId: sentMsg.key.id });
-	} catch (e) { return res.json({ receiver, status: 'failed', message: e.message || 'Failed to send message' }); }
-});
-
 // Batch broadcast simple (plain text template only)
 router.post('/broadcast-message', async (req, res) => {
 	const broadcasts = req.body.broadcasts;
