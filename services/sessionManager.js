@@ -140,19 +140,74 @@ async function removeSession(accountId, { userId = null, deleteFolder = false } 
 	const sessionKey = buildSessionKey(accountId, userId);
 	const sess = sessions[sessionKey];
 
-	if (!sess) return false;
+	if (!sess) {
+		if (deleteFolder) {
+			const sessionPath = buildSessionPath(accountId, userId);
+			if (fs.existsSync(sessionPath)) {
+				fs.rmSync(sessionPath, { recursive: true, force: true });
+			}
+		}
+		return false;
+	}
 
-	try { sess.socket.logout(); } catch { }
-	try { sess.socket.end(); } catch { }
-	try { sess.socket.ws?.close(); } catch { }
+	// try { sess.socket.logout(); } catch { }
+	// try { sess.socket.end(); } catch { }
+	// try { sess.socket.ws?.close(); } catch { }
+
+	try {
+		if (typeof sess.socket.logout === 'function') {
+			await sess.socket.logout().catch(() => { });
+		}
+	} catch (e) { }
+
+	try {
+		if (typeof sess.socket.end === 'function') {
+			await sess.socket.end().catch(() => { });
+		}
+	} catch (e) { }
+
+	try {
+		if (sess.socket.ws && typeof sess.socket.ws.close === 'function') {
+			sess.socket.ws.close();
+		}
+	} catch (e) { }
 
 	delete sessions[sessionKey];
 
 	if (deleteFolder) {
-		fs.rmSync(sess.sessionPath, { recursive: true, force: true });
+		const sessionPath = sess.sessionPath || buildSessionPath(accountId, userId);
+		if (sessionPath && fs.existsSync(sessionPath)) {
+			fs.rmSync(sessionPath, { recursive: true, force: true });
+		}
 	}
 
 	return true;
+}
+
+async function purgeSessionCredentials(accountId, { removeStore = false, userId = null } = {}) {
+	const sessionPath = buildSessionPath(accountId, userId);
+	if (!fs.existsSync(sessionPath)) return { purged: 0, message: 'session folder missing' };
+	let purged = 0;
+	for (const f of fs.readdirSync(sessionPath)) {
+		if (f === 'store.json' && !removeStore) continue;
+		if (f.endsWith('.json')) {
+			try { fs.rmSync(path.join(sessionPath, f), { force: true }); purged++; } catch { }
+		}
+	}
+	return { purged, message: 'credential files removed', removeStore };
+}
+
+function emptySessionFolder(accountId, userId = null) {
+	const sessionPath = buildSessionPath(accountId, userId);
+	if (!fs.existsSync(sessionPath)) return { removed: 0, message: 'folder not found' };
+	let removed = 0;
+	for (const entry of fs.readdirSync(sessionPath)) {
+		try {
+			fs.rmSync(path.join(sessionPath, entry), { recursive: true, force: true });
+			removed++;
+		} catch { }
+	}
+	return { removed, message: 'session folder emptied' };
 }
 
 module.exports = {
@@ -162,5 +217,7 @@ module.exports = {
 	removeSession,
 	SESSIONS_DIR,
 	buildSessionKey,
-	buildSessionPath
+	buildSessionPath,
+	emptySessionFolder,
+	purgeSessionCredentials
 };
