@@ -117,6 +117,21 @@ async function startSession(accountId, userId) {
 			}
 		});
 
+		// Log incoming message upserts (concise summary) to help diagnose decryption errors
+		sock.ev.on('messages.upsert', (m) => {
+			try {
+				const msgs = m.messages || [];
+				for (const msg of msgs) {
+					const remote = msg.key && msg.key.remoteJid ? msg.key.remoteJid : '<unknown>';
+					const id = msg.key && msg.key.id ? msg.key.id : '<no-id>';
+					const t = msg.messageTimestamp || (msg.message && msg.message.timestamp) || Date.now();
+					console.log(`[WA][MSG] upsert — session=${sessionKey} remote=${remote} id=${id} ts=${new Date(t * 1000).toISOString()}`);
+				}
+			} catch (e) {
+				// Don't let logging break session flow
+			}
+		});
+
 		return sessions[sessionKey];
 	})();
 
