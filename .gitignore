@@ -1,5 +1,6 @@
 .DS_Store
 
+scripts/
 planning/
 # Node dependencies
 node_modules/
