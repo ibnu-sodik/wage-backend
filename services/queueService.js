@@ -8,6 +8,8 @@ const QUEUE_NAME = process.env.SCHEDULER_QUEUE_NAME || 'wage-scheduler-queue';
 const QUEUE_CONCURRENCY = parseInt(process.env.SCHEDULER_QUEUE_CONCURRENCY) || 10;
 const MAX_RETRIES = parseInt(process.env.SCHEDULER_MAX_RETRIES) || 3;
 const BASE_BACKOFF_SECONDS = parseInt(process.env.SCHEDULER_BASE_BACKOFF_SECONDS) || 60;
+const RATE_MIN_MS = parseInt(process.env.SCHEDULER_RATE_MIN_MS) || 300;
+const RATE_MAX_MS = parseInt(process.env.SCHEDULER_RATE_MAX_MS) || 1000;
 
 const queue = new Queue(QUEUE_NAME, REDIS_URL);
 
@@ -58,6 +60,9 @@ queue.process('send-recipient', QUEUE_CONCURRENCY, async (job) => {
     const senderRow = senderRows[0] || {};
 
     try {
+        // rate limit: random small delay before sending to avoid flooding
+        const delayMs = Math.floor(Math.random() * (RATE_MAX_MS - RATE_MIN_MS + 1)) + RATE_MIN_MS;
+        await new Promise(r => setTimeout(r, delayMs));
         if (messageType === 'live') {
             const { applyPlaceholders } = require('../utils/template');
             const finalMessage = applyPlaceholders(messageText || '', { name: detailRow.CONTACT_NAME || '' });

@@ -40,7 +40,7 @@ function createApp() {
 
 	// Start background scheduler (if enabled)
 	try {
-		const { startScheduler } = require('./services/scheduler');
+		const { startScheduler } = require('./services/schedulerService');
 		startScheduler();
 	} catch (e) {
 		console.warn('Scheduler failed to start:', e.message);

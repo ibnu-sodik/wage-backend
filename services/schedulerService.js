@@ -7,6 +7,8 @@ const POLL_INTERVAL_MS = parseInt(process.env.SCHEDULER_POLL_INTERVAL_MS) || 15_
 const MAX_RETRIES = parseInt(process.env.SCHEDULER_MAX_RETRIES) || 3;
 const BASE_BACKOFF_SECONDS = parseInt(process.env.SCHEDULER_BASE_BACKOFF_SECONDS) || 60; // exponential base
 const DEVICE_CONCURRENCY = parseInt(process.env.SCHEDULER_DEVICE_CONCURRENCY) || 5;
+const RATE_MIN_MS = parseInt(process.env.SCHEDULER_RATE_MIN_MS) || 300;
+const RATE_MAX_MS = parseInt(process.env.SCHEDULER_RATE_MAX_MS) || 1000;
 
 let _timer = null;
 let _running = false;
@@ -97,6 +99,9 @@ async function processHeader(row) {
             }
 
             if (MESSAGE_TYPE === 'live') {
+                // rate limit: small random delay before sending to avoid rapid-fire
+                const delayMs = Math.floor(Math.random() * (RATE_MAX_MS - RATE_MIN_MS + 1)) + RATE_MIN_MS;
+                await new Promise(r => setTimeout(r, delayMs));
                 const placeholders = { name: det.CONTACT_NAME || '' };
                 const finalMessage = applyPlaceholders(MESSAGE_TEXT || '', placeholders);
                 const sent = await session.socket.sendMessage(`${receiver}@s.whatsapp.net`, { text: finalMessage });
@@ -125,6 +130,9 @@ async function processHeader(row) {
                     continue;
                 }
                 try {
+                    // rate limit before templated send
+                    const delayMs = Math.floor(Math.random() * (RATE_MAX_MS - RATE_MIN_MS + 1)) + RATE_MIN_MS;
+                    await new Promise(r => setTimeout(r, delayMs));
                     await sendTemplatedMessage({ session, templateRow, receiverRow: det, senderRow, receiver, templateType: templateRow.TEMP_TYPE });
                     await db.query('UPDATE scbcdt SET IS_SENT = 1, DELIVERY_AT = ?, LAST_ERROR = NULL, NEXT_ATTEMPT_AT = NULL WHERE ID = ? AND NOKEY = ? AND USER_ID = ?', [new Date(), ID, nokey, USER_ID]);
                 } catch (e) {
@@ -184,7 +192,7 @@ async function processHeader(row) {
 const USE_QUEUE = process.env.USE_JOB_QUEUE === 'true';
 let queueModule = null;
 if (USE_QUEUE) {
-    try { queueModule = require('./queue'); } catch (e) { console.warn('[SCHED] job queue requested but queue module failed to load:', e.message); }
+    try { queueModule = require('./queueService'); } catch (e) { console.warn('[SCHED] job queue requested but queue module failed to load:', e.message); }
 }
 
 async function poll() {
