@@ -37,6 +37,14 @@ function createApp() {
 			realTime: new Date().toLocaleString('id-ID', { timeZone: process.env.TZ })
 		});
 	});
+
+	// Start background scheduler (if enabled)
+	try {
+		const { startScheduler } = require('./services/scheduler');
+		startScheduler();
+	} catch (e) {
+		console.warn('Scheduler failed to start:', e.message);
+	}
 	return app;
 }
 
