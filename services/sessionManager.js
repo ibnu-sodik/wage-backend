@@ -150,10 +150,6 @@ async function removeSession(accountId, { userId = null, deleteFolder = false } 
 		return false;
 	}
 
-	// try { sess.socket.logout(); } catch { }
-	// try { sess.socket.end(); } catch { }
-	// try { sess.socket.ws?.close(); } catch { }
-
 	try {
 		if (typeof sess.socket.logout === 'function') {
 			await sess.socket.logout().catch(() => { });
