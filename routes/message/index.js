@@ -24,7 +24,7 @@ router.post('/send', async (req, res) => {
 			return res.status(400).json({ status: 'error', message: 'Device not connected' });
 		}
 
-		await session.socket.sendMessage(
+		const send = await session.socket.sendMessage(
 			`${normalizedReceiver}@s.whatsapp.net`,
 			{ text: message }
 		);
@@ -32,7 +32,9 @@ router.post('/send', async (req, res) => {
 		return res.status(200).json({
 			status: 'success',
 			message: 'Message sent',
-			receiver: normalizedReceiver
+			receiver: normalizedReceiver,
+			messageId: send.key.id,
+			delivery_at: send.messageTimestamp.low,
 		});
 
 	} catch (e) {
@@ -107,6 +109,7 @@ router.post('/send-broadcast', async (req, res) => {
 		return res.json({
 			status: 'sent',
 			messageId: broadcast.key.id,
+			delivery_at: broadcast.messageTimestamp.low,
 			broadcast_id,
 			template_id,
 			receiver
@@ -152,6 +155,7 @@ router.post('/send-bulk', async (req, res) => {
 		return res.json({
 			status: 'sent',
 			messageId: bulk.key.id,
+			delivery_at: bulk.messageTimestamp.low,
 			account,
 			receiver
 		});
