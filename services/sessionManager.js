@@ -95,8 +95,18 @@ async function startSession(accountId, userId) {
 				const code = lastDisconnect?.error?.output?.statusCode || lastDisconnect?.reason;
 				console.log(`[WA][${sessionKey}] Connection closed: ${code}`);
 
-				if (code === DisconnectReason.loggedOut) {
-					console.log(`[WA][${sessionKey}] Logged out. Must scan QR again.`);
+				// Treat explicit 401 (HTTP unauthorized) the same as logged out
+				if (code === DisconnectReason.loggedOut || code === 401) {
+					console.log(`[WA][${sessionKey}] Logged out. Removing credential JSON files and requiring QR scan.`);
+					try {
+						// NOTE: purgeSessionCredentials removes .json credential files in the session folder
+						// NOTE: by default it preserves `store.json` unless removeStore = true
+						await purgeSessionCredentials(accountId, { removeStore: false, userId });
+						console.log(`[WA][${sessionKey}] Credential JSON files removed from ${sessionPath}`);
+					} catch (e) {
+						console.log(`[WA][${sessionKey}] Failed to purge credentials: ${e && e.message ? e.message : e}`);
+					}
+
 					delete sessions[sessionKey];
 					return;
 				}
@@ -117,7 +127,7 @@ async function startSession(accountId, userId) {
 			}
 		});
 
-		// Log incoming message upserts (concise summary) to help diagnose decryption errors
+		// ANCHOR: Log incoming message upserts (concise summary) to help diagnose decryption errors
 		sock.ev.on('messages.upsert', (m) => {
 			try {
 				const msgs = m.messages || [];
@@ -128,7 +138,7 @@ async function startSession(accountId, userId) {
 					console.log(`[WA][MSG] upsert — session=${sessionKey} remote=${remote} id=${id} ts=${new Date(t * 1000).toISOString()}`);
 				}
 			} catch (e) {
-				// Don't let logging break session flow
+				// NOTE: Don't let logging break session flow
 			}
 		});
 
