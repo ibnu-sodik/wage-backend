@@ -87,11 +87,19 @@ queue.process('send-recipient', QUEUE_CONCURRENCY, async (job) => {
             const fail_count = counts.fail_count || 0;
             const total_count = counts.total_count || 0;
             let newStatus = 'scheduled';
-            if (total_count === 0) newStatus = 'sent';
-            else if (sent_count === total_count) newStatus = 'sent';
-            else if (fail_count === total_count) newStatus = 'failed';
-            else if (sent_count > 0) newStatus = 'sent';
-            else newStatus = 'scheduled';
+            // Priority: if ALL failed → 'failed'; if ALL sent → 'sent'; otherwise partial → 'sent'
+            if (total_count === 0) {
+                newStatus = 'sent';
+            } else if (fail_count === total_count && total_count > 0) {
+                // ALL recipients failed (IS_SENT = 2)
+                newStatus = 'failed';
+            } else if (sent_count === total_count && total_count > 0) {
+                // ALL recipients sent (IS_SENT = 1)
+                newStatus = 'sent';
+            } else {
+                // Mixed state (some sent, some pending, or some failed) → mark as 'sent' (partial progress)
+                newStatus = 'sent';
+            }
             await conn.query('UPDATE scbchd SET STATUS = ? WHERE ID = ? AND USER_ID = ?', [newStatus, headerId, userId]);
             await conn.commit();
         } catch (e) {

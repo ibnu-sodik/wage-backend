@@ -182,11 +182,19 @@ async function processHeader(row) {
         const [[counts]] = await db.query("SELECT SUM(CASE WHEN IS_SENT = 1 THEN 1 ELSE 0 END) AS sent_count, SUM(CASE WHEN IS_SENT = 2 THEN 1 ELSE 0 END) AS fail_count, COUNT(*) AS total_count FROM scbcdt WHERE ID = ? AND USER_ID = ?", [ID, USER_ID]);
         const { sent_count = 0, fail_count = 0, total_count = 0 } = counts || {};
         let newStatus = 'scheduled';
-        if (total_count === 0) newStatus = 'sent';
-        else if (sent_count === total_count) newStatus = 'sent';
-        else if (fail_count === total_count) newStatus = 'failed';
-        else if (sent_count > 0) newStatus = 'sent';
-        else newStatus = 'scheduled';
+        // Priority: if ALL failed → 'failed'; if ALL sent → 'sent'; otherwise partial → 'sent'
+        if (total_count === 0) {
+            newStatus = 'sent';
+        } else if (fail_count === total_count && total_count > 0) {
+            // ALL recipients failed (IS_SENT = 2)
+            newStatus = 'failed';
+        } else if (sent_count === total_count && total_count > 0) {
+            // ALL recipients sent (IS_SENT = 1)
+            newStatus = 'sent';
+        } else {
+            // Mixed state (some sent, some pending, or some failed) → mark as 'sent' (partial progress)
+            newStatus = 'sent';
+        }
         await db.query('UPDATE scbchd SET STATUS = ? WHERE ID = ? AND USER_ID = ?', [newStatus, ID, USER_ID]);
     } catch (e) {
         console.error('[SCHED] evaluate header status failed', e.message);
