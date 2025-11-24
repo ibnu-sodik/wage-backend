@@ -61,8 +61,12 @@ async function processHeader(row) {
         if (USE_QUEUE && queueModule) {
             try {
                 await queueModule.addRecipientJob({ headerId: ID, nokey, deviceId: DEVICE_ID, userId: USER_ID, messageType: MESSAGE_TYPE, messageText: MESSAGE_TEXT, templateId: TEMPLATE_ID });
-                // mark NEXT_ATTEMPT_AT null so we don't block future retries from scheduler
-                await db.query('UPDATE scbcdt SET NEXT_ATTEMPT_AT = NULL WHERE ID = ? AND NOKEY = ? AND USER_ID = ?', [ID, nokey, USER_ID]);
+                // prevent immediate re-enqueue by scheduler while the queue worker is processing
+                // hold this recipient for a short period (e.g., poll interval seconds)
+                const holdSeconds = Math.max(5, Math.ceil(POLL_INTERVAL_MS / 1000));
+                try {
+                    await db.query('UPDATE scbcdt SET NEXT_ATTEMPT_AT = DATE_ADD(NOW(), INTERVAL ? SECOND) WHERE ID = ? AND NOKEY = ? AND USER_ID = ?', [holdSeconds, ID, nokey, USER_ID]);
+                } catch (ex) { /* non-fatal */ }
             } catch (e) {
                 console.error('[SCHED] enqueue failed for', nokey, e.message);
                 // fallthrough to postpone via scheduler
