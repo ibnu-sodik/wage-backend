@@ -1,7 +1,7 @@
 // Entry point: bootstrap express app
 const { createApp } = require('./app');
 
-const port = process.env.PORT || 8000;
+const port = process.env.PORT || 8001;
 const app = createApp();
 
 app.listen(port, () => {
