@@ -24,7 +24,7 @@ router.post('/send', async (req, res) => {
 			return res.status(400).json({ status: 'error', message: 'Device not connected' });
 		}
 
-		await session.socket.sendMessage(
+		const send = await session.socket.sendMessage(
 			`${normalizedReceiver}@s.whatsapp.net`,
 			{ text: message }
 		);
@@ -32,14 +32,16 @@ router.post('/send', async (req, res) => {
 		return res.status(200).json({
 			status: 'success',
 			message: 'Message sent',
-			receiver: normalizedReceiver
+			receiver: normalizedReceiver,
+			messageId: send.key.id,
+			delivery_at: send.messageTimestamp.low,
 		});
 
-	} catch (error) {
+	} catch (e) {
 		return res.status(500).json({
 			status: 'error',
-			message: error.message || 'Unknown error',
-			detail: error?.data || error?.reason || null
+			message: e.message || 'Unknown error',
+			detail: e?.data || e?.reason || null
 		});
 	}
 
@@ -107,21 +109,67 @@ router.post('/send-broadcast', async (req, res) => {
 		return res.json({
 			status: 'sent',
 			messageId: broadcast.key.id,
+			delivery_at: broadcast.messageTimestamp.low,
 			broadcast_id,
 			template_id,
 			receiver
 		})
-	} catch (error) {
-		console.error('Error send-broadcast:', error);
+	} catch (e) {
+		console.error('Error send-broadcast:', e);
 		return res.status(500).json({
 			status: 'failed',
-			message: error.message || 'Failed to send message',
+			message: e.message || 'Failed to send message',
 			broadcast_id,
 			template_id,
 			receiver
 		});
 	}
 });
+
+router.post('/send-bulk', async (req, res) => {
+	const { account, receiver, message, user_id } = req.body;
+
+	if (!account) return res.status(400).json({ status: 'error', message: 'account ID is required' });
+	if (!receiver) return res.status(400).json({ status: 'error', message: 'receiver number is required' });
+	if (!message) return res.status(400).json({ status: 'error', message: 'message is required' });
+	if (!user_id) return res.status(400).json({ status: 'error', message: 'user ID is required' });
+
+	const normalizedReceiver = normalizeNumber(receiver);
+
+	try {
+		const session = await startSession(account, user_id);
+
+		if (!session || !session.socket) {
+			return res.status(500).json({ status: 'error', message: 'Failed to start session' });
+		}
+
+		if (!session.connected) {
+			return res.status(400).json({ status: 'error', message: 'Device not connected' });
+		}
+
+		const bulk = await session.socket.sendMessage(
+			`${normalizedReceiver}@s.whatsapp.net`,
+			{ text: message }
+		);
+
+		return res.json({
+			status: 'sent',
+			messageId: bulk.key.id,
+			delivery_at: bulk.messageTimestamp.low,
+			account,
+			receiver
+		});
+
+	} catch (e) {
+		console.error('Error send-bulk:', e);
+		return res.status(500).json({
+			status: 'failed',
+			message: e.message || 'Failed to send message',
+			account,
+			receiver
+		});
+	}
+})
 
 function normalizeNumber(num) {
 	return num.replace(/\D/g, '').replace(/^0/, '62');

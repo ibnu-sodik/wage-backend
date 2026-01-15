@@ -95,8 +95,18 @@ async function startSession(accountId, userId) {
 				const code = lastDisconnect?.error?.output?.statusCode || lastDisconnect?.reason;
 				console.log(`[WA][${sessionKey}] Connection closed: ${code}`);
 
-				if (code === DisconnectReason.loggedOut) {
-					console.log(`[WA][${sessionKey}] Logged out. Must scan QR again.`);
+				// Treat explicit 401 (HTTP unauthorized) the same as logged out
+				if (code === DisconnectReason.loggedOut || code === 401) {
+					console.log(`[WA][${sessionKey}] Logged out. Removing credential JSON files and requiring QR scan.`);
+					try {
+						// NOTE: purgeSessionCredentials removes .json credential files in the session folder
+						// NOTE: by default it preserves `store.json` unless removeStore = true
+						await purgeSessionCredentials(accountId, { removeStore: false, userId });
+						console.log(`[WA][${sessionKey}] Credential JSON files removed from ${sessionPath}`);
+					} catch (e) {
+						console.log(`[WA][${sessionKey}] Failed to purge credentials: ${e && e.message ? e.message : e}`);
+					}
+
 					delete sessions[sessionKey];
 					return;
 				}
@@ -114,6 +124,21 @@ async function startSession(accountId, userId) {
 					delete sessions[sessionKey];
 					setTimeout(() => startSession(accountId, userId), 1500);
 				}
+			}
+		});
+
+		// ANCHOR: Log incoming message upserts (concise summary) to help diagnose decryption errors
+		sock.ev.on('messages.upsert', (m) => {
+			try {
+				const msgs = m.messages || [];
+				for (const msg of msgs) {
+					const remote = msg.key && msg.key.remoteJid ? msg.key.remoteJid : '<unknown>';
+					const id = msg.key && msg.key.id ? msg.key.id : '<no-id>';
+					const t = msg.messageTimestamp || (msg.message && msg.message.timestamp) || Date.now();
+					console.log(`[WA][MSG] upsert — session=${sessionKey} remote=${remote} id=${id} ts=${new Date(t * 1000).toISOString()}`);
+				}
+			} catch (e) {
+				// NOTE: Don't let logging break session flow
 			}
 		});
 
@@ -140,19 +165,70 @@ async function removeSession(accountId, { userId = null, deleteFolder = false } 
 	const sessionKey = buildSessionKey(accountId, userId);
 	const sess = sessions[sessionKey];
 
-	if (!sess) return false;
+	if (!sess) {
+		if (deleteFolder) {
+			const sessionPath = buildSessionPath(accountId, userId);
+			if (fs.existsSync(sessionPath)) {
+				fs.rmSync(sessionPath, { recursive: true, force: true });
+			}
+		}
+		return false;
+	}
 
-	try { sess.socket.logout(); } catch { }
-	try { sess.socket.end(); } catch { }
-	try { sess.socket.ws?.close(); } catch { }
+	try {
+		if (typeof sess.socket.logout === 'function') {
+			await sess.socket.logout().catch(() => { });
+		}
+	} catch (e) { }
+
+	try {
+		if (typeof sess.socket.end === 'function') {
+			await sess.socket.end().catch(() => { });
+		}
+	} catch (e) { }
+
+	try {
+		if (sess.socket.ws && typeof sess.socket.ws.close === 'function') {
+			sess.socket.ws.close();
+		}
+	} catch (e) { }
 
 	delete sessions[sessionKey];
 
 	if (deleteFolder) {
-		fs.rmSync(sess.sessionPath, { recursive: true, force: true });
+		const sessionPath = sess.sessionPath || buildSessionPath(accountId, userId);
+		if (sessionPath && fs.existsSync(sessionPath)) {
+			fs.rmSync(sessionPath, { recursive: true, force: true });
+		}
 	}
 
 	return true;
+}
+
+async function purgeSessionCredentials(accountId, { removeStore = false, userId = null } = {}) {
+	const sessionPath = buildSessionPath(accountId, userId);
+	if (!fs.existsSync(sessionPath)) return { purged: 0, message: 'session folder missing' };
+	let purged = 0;
+	for (const f of fs.readdirSync(sessionPath)) {
+		if (f === 'store.json' && !removeStore) continue;
+		if (f.endsWith('.json')) {
+			try { fs.rmSync(path.join(sessionPath, f), { force: true }); purged++; } catch { }
+		}
+	}
+	return { purged, message: 'credential files removed', removeStore };
+}
+
+function emptySessionFolder(accountId, userId = null) {
+	const sessionPath = buildSessionPath(accountId, userId);
+	if (!fs.existsSync(sessionPath)) return { removed: 0, message: 'folder not found' };
+	let removed = 0;
+	for (const entry of fs.readdirSync(sessionPath)) {
+		try {
+			fs.rmSync(path.join(sessionPath, entry), { recursive: true, force: true });
+			removed++;
+		} catch { }
+	}
+	return { removed, message: 'session folder emptied' };
 }
 
 module.exports = {
@@ -162,5 +238,7 @@ module.exports = {
 	removeSession,
 	SESSIONS_DIR,
 	buildSessionKey,
-	buildSessionPath
+	buildSessionPath,
+	emptySessionFolder,
+	purgeSessionCredentials
 };

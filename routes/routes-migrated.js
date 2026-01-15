@@ -64,3 +64,16 @@ router.post('/send-broadcast-message', async (req, res) => {
 		return res.json({ receiver, status: 'sent', messageId: sentMsg.key.id });
 	} catch (e) { return res.json({ receiver, status: 'failed', message: e.message || 'Failed to send message' }); }
 });
+
+// Batch bulk message
+router.post('/send-bulk-message', async (req, res) => {
+	const { sender, receiver, message, userid } = req.body;
+	const session = await startSession(sender, userid);
+	if (!session.connected) return res.status(400).json({ status: 'error', message: 'Device not connected' });
+	try {
+		const sentMsg = await session.socket.sendMessage(`${receiver}@s.whatsapp.net`, { text: message });
+		return res.json({ receiver, status: 'sent', messageId: sentMsg.key.id });
+	} catch (e) {
+		return res.status(500).json({ receiver, status: 'failed', message: e.message });
+	}
+});

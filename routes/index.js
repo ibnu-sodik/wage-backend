@@ -100,19 +100,6 @@ router.post('/broadcast-message', async (req, res) => {
 	res.json({ status: 'completed', results });
 });
 
-// Batch bulk message
-router.post('/send-bulk-message', async (req, res) => {
-	const { sender, receiver, message, userid } = req.body;
-	const session = await startSession(sender, userid);
-	if (!session.connected) return res.status(400).json({ status: 'error', message: 'Device not connected' });
-	try {
-		const sentMsg = await session.socket.sendMessage(`${receiver}@s.whatsapp.net`, { text: message });
-		return res.json({ receiver, status: 'sent', messageId: sentMsg.key.id });
-	} catch (e) {
-		return res.status(500).json({ receiver, status: 'failed', message: e.message });
-	}
-});
-
 // Contacts
 router.get('/get-contacts', async (req, res) => {
 	const accountId = req.query.account;
@@ -143,37 +130,79 @@ router.get('/session-debug', (req, res) => {
 
 // Logout
 router.post('/logout', async (req, res) => {
-	const { account, full, deleteFolder, userId } = req.body;
-	if (!account) return res.status(400).json({ status: 'error', message: 'Account ID required' });
-	const sessionPath = buildSessionPath(account, userId);
-	const folderExists = fs.existsSync(sessionPath);
-	if (!folderExists) return res.status(404).json({ status: 'error', message: 'Device folder not found (already unregistered)', account });
+	const { account, userId, fullRemove } = req.body;
 
-	const doDeleteFolder = full === true || deleteFolder === true; // explicit full removal
+	if (!account) return res.status(400).json({ status: 'error', message: 'account ID is required' });
+	if (!userId) return res.status(400).json({ status: 'error', message: 'user ID is required' });
+
+
+	const doDeleteFolder =
+		fullRemove === true ||
+		fullRemove === 'true' ||
+		fullRemove === 1 ||
+		fullRemove === '1';
+
+	const sessionPath = buildSessionPath(account, userId);
 	const session = getSession(account, userId);
+	const folderExists = fs.existsSync(sessionPath);
+
+	if (!session && !folderExists) {
+		return res.json({
+			status: 'already_logged_out',
+			account,
+			folderRemoved: false,
+			emptied: null,
+			message: 'Session and folder already removed previously'
+		});
+	}
+
+	let folderRemoved = false;
 	let emptied = null;
+
 	try {
+		// NOTE: 1. Kalau ada session aktif → logout dulu
 		if (session) {
 			await removeSession(account, { deleteFolder: doDeleteFolder, userId });
-		} else if (doDeleteFolder) {
-			// no active session but full deletion requested
-			try { fs.rmSync(sessionPath, { recursive: true, force: true }); } catch (e) { return res.status(500).json({ status: 'error', message: 'Failed to remove folder', account }); }
+
+			if (doDeleteFolder) {
+				// removeSession sudah menghapus folder (kalau sess.sessionPath dipakai)
+				folderRemoved = true;
+			}
+		} else {
+			// Tidak ada session di memory
+			if (doDeleteFolder && folderExists) {
+				// Hapus folder langsung kalau diminta fullRemove
+				fs.rmSync(sessionPath, { recursive: true, force: true });
+				folderRemoved = true;
+			}
 		}
+
+		// NOTE: 2. Kalau TIDAK fullRemove → kosongkan isi folder saja
+		// NOTE: baik ada session atau tidak, selama foldernya ada.
 		if (!doDeleteFolder) {
-			// Hanya kosongkan isi folder (hapus semua file & subfolder) sesuai permintaan user
 			emptied = emptySessionFolder(account, userId);
+			// pastikan fungsi ini menghapus isi folder
 		}
+
 	} catch (e) {
 		console.error('[ERROR] Logout failure', account, e);
-		return res.status(500).json({ status: 'error', message: e.message || 'Failed during logout', account });
+		return res.status(500).json({
+			status: 'error',
+			message: e.message || 'Failed during logout',
+			account
+		});
 	}
 
 	return res.json({
 		status: 'logged_out',
 		account,
-		folderRemoved: !!doDeleteFolder,
-		emptied: !doDeleteFolder ? emptied : null,
-		message: doDeleteFolder ? 'Session & folder deleted' : 'Session logged out and folder contents cleared'
+		folderRemoved,
+		emptied,
+		message: doDeleteFolder
+			? (folderRemoved
+				? 'Session logged out and folder deleted'
+				: 'Session logged out, but folder was already missing')
+			: (emptied?.message || 'Session logged out and folder contents cleared')
 	});
 });
 
