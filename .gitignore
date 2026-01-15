@@ -4,6 +4,7 @@ scripts/
 planning/
 # Node dependencies
 node_modules/
+package-lock.json
 
 # WhatsApp session files (kredensial)
 sessions/
