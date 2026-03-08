@@ -91,7 +91,7 @@ router.post('/broadcast-message', async (req, res) => {
 		const session = await startSession(sender, userid);
 		if (!session.connected) { results.push({ receiver, status: 'failed', message: 'Sender not connected' }); continue; }
 		try {
-			const [rows] = await db.query('SELECT TEMP_MESSAGE FROM TEMPTBL WHERE ID = ?', [template]);
+			const [rows] = await db.query('SELECT TEMP_MESSAGE FROM temptbl WHERE ID = ?', [template]);
 			if (!rows.length) { results.push({ receiver, status: 'failed', message: 'Template not found' }); continue; }
 			await session.socket.sendMessage(`${receiver}@s.whatsapp.net`, { text: rows[0].TEMP_MESSAGE });
 			results.push({ receiver, status: 'success', message: 'Sent' });

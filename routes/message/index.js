@@ -69,7 +69,7 @@ router.post('/send-broadcast', async (req, res) => {
 		}
 
 		const [templateRows] = await db.query(
-			'SELECT TEMP_TYPE, TEMP_FILE, TEMP_MESSAGE, TEMP_BUTTONS FROM TEMPTBL WHERE ID = ? AND USER_ID = ?',
+			'SELECT TEMP_TYPE, TEMP_FILE, TEMP_MESSAGE, TEMP_BUTTONS FROM temptbl WHERE ID = ? AND USER_ID = ?',
 			[template_id, user_id]
 		);
 		if (!templateRows.length) {
@@ -83,7 +83,7 @@ router.post('/send-broadcast', async (req, res) => {
 		}
 
 		const [receiverRows] = await db.query(
-			'SELECT CONTACT_NAME, CONTACT_NUMBER, DEVICE_NAME FROM BCDT WHERE ID = ? AND NOKEY = ? AND USER_ID = ?',
+			'SELECT CONTACT_NAME, CONTACT_NUMBER, DEVICE_NAME FROM bcdt WHERE ID = ? AND NOKEY = ? AND USER_ID = ?',
 			[broadcast_id, nokey, user_id]
 		);
 		if (!receiverRows.length) {
@@ -91,7 +91,7 @@ router.post('/send-broadcast', async (req, res) => {
 		}
 
 		const [senderRows] = await db.query(
-			"SELECT CONCAT(FIRST_NAME,' ', LAST_NAME) AS FULLNAME, EMAIL FROM SYSUSER WHERE ID = ?",
+			"SELECT CONCAT(FIRST_NAME,' ', LAST_NAME) AS FULLNAME, EMAIL FROM sysuser WHERE ID = ?",
 			[user_id]
 		);
 		if (!senderRows.length) {

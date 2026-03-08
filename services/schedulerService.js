@@ -48,10 +48,10 @@ async function processHeader(row) {
     // Preload template and sender when needed
     let templateRow = null;
     if (MESSAGE_TYPE === 'template' && TEMPLATE_ID) {
-        const [trows] = await db.query('SELECT ID, TEMP_TYPE, TEMP_FILE, TEMP_MESSAGE, TEMP_BUTTONS FROM TEMPTBL WHERE ID = ? AND USER_ID = ?', [TEMPLATE_ID, USER_ID]);
+        const [trows] = await db.query('SELECT ID, TEMP_TYPE, TEMP_FILE, TEMP_MESSAGE, TEMP_BUTTONS FROM temptbl WHERE ID = ? AND USER_ID = ?', [TEMPLATE_ID, USER_ID]);
         templateRow = trows[0] || null;
     }
-    const [senderRows] = await db.query("SELECT CONCAT(FIRST_NAME,' ', LAST_NAME) AS FULLNAME, EMAIL FROM SYSUSER WHERE ID = ?", [USER_ID]);
+    const [senderRows] = await db.query("SELECT CONCAT(FIRST_NAME,' ', LAST_NAME) AS FULLNAME, EMAIL FROM sysuser WHERE ID = ?", [USER_ID]);
     const senderRow = senderRows[0] || {};
 
     for (const det of details) {

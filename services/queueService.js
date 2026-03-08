@@ -50,13 +50,13 @@ queue.process('send-recipient', QUEUE_CONCURRENCY, async (job) => {
     // prepare template if needed
     let templateRow = null;
     if (messageType === 'template' && templateId) {
-        const [trows] = await db.query('SELECT ID, TEMP_TYPE, TEMP_FILE, TEMP_MESSAGE, TEMP_BUTTONS FROM TEMPTBL WHERE ID = ? AND USER_ID = ?', [templateId, userId]);
+        const [trows] = await db.query('SELECT ID, TEMP_TYPE, TEMP_FILE, TEMP_MESSAGE, TEMP_BUTTONS FROM temptbl WHERE ID = ? AND USER_ID = ?', [templateId, userId]);
         templateRow = trows[0] || null;
         if (!templateRow) throw new Error('template not found');
     }
 
     // sender
-    const [senderRows] = await db.query("SELECT CONCAT(FIRST_NAME,' ', LAST_NAME) AS FULLNAME, EMAIL FROM SYSUSER WHERE ID = ?", [userId]);
+    const [senderRows] = await db.query("SELECT CONCAT(FIRST_NAME,' ', LAST_NAME) AS FULLNAME, EMAIL FROM sysuser WHERE ID = ?", [userId]);
     const senderRow = senderRows[0] || {};
 
     try {
