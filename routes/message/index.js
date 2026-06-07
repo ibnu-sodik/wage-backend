@@ -30,7 +30,7 @@ router.post('/send', async (req, res) => {
 		);
 
 		await db.query(
-			'UPDATE user_subscription_usage SET MESSAGE_PER_DAY = CASE WHEN LAST_MESSAGE_DATE = CURDATE() THEN MESSAGE_PER_DAY + 1 ELSE 1 END, LAST_MESSAGE_DATE = CURDATE() WHERE USER_ID = ?',
+			'UPDATE user_subscription_usage SET MESSAGE_PER_DAY = CASE WHEN LAST_MESSAGE_DATE IS NULL OR LAST_MESSAGE_DATE = CURDATE() THEN MESSAGE_PER_DAY + 1 ELSE 1 END, LAST_MESSAGE_DATE = CURDATE() WHERE USER_ID = ?',
 			[user_id]
 		);
 
@@ -113,7 +113,7 @@ router.post('/send-broadcast', async (req, res) => {
 		});
 
 		await db.query(
-			'UPDATE user_subscription_usage SET MESSAGE_PER_DAY = CASE WHEN LAST_MESSAGE_DATE = CURDATE() THEN MESSAGE_PER_DAY + 1 ELSE 1 END, LAST_MESSAGE_DATE = CURDATE() WHERE USER_ID = ?',
+			'UPDATE user_subscription_usage SET MESSAGE_PER_DAY = CASE WHEN LAST_MESSAGE_DATE IS NULL OR LAST_MESSAGE_DATE = CURDATE() THEN MESSAGE_PER_DAY + 1 ELSE 1 END, LAST_MESSAGE_DATE = CURDATE() WHERE USER_ID = ?',
 			[user_id]
 		);
 
@@ -164,7 +164,7 @@ router.post('/send-bulk', async (req, res) => {
 		);
 
 		await db.query(
-			'UPDATE user_subscription_usage SET MESSAGE_PER_DAY = CASE WHEN LAST_MESSAGE_DATE = CURDATE() THEN MESSAGE_PER_DAY + 1 ELSE 1 END, LAST_MESSAGE_DATE = CURDATE() WHERE USER_ID = ?',
+			'UPDATE user_subscription_usage SET MESSAGE_PER_DAY = CASE WHEN LAST_MESSAGE_DATE IS NULL OR LAST_MESSAGE_DATE = CURDATE() THEN MESSAGE_PER_DAY + 1 ELSE 1 END, LAST_MESSAGE_DATE = CURDATE() WHERE USER_ID = ?',
 			[user_id]
 		);
 
