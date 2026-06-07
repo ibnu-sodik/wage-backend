@@ -29,6 +29,11 @@ router.post('/send', async (req, res) => {
 			{ text: message }
 		);
 
+		await db.query(
+			'UPDATE user_subscription_usage SET MESSAGE_PER_DAY = CASE WHEN LAST_MESSAGE_DATE = CURDATE() THEN MESSAGE_PER_DAY + 1 ELSE 1 END, LAST_MESSAGE_DATE = CURDATE() WHERE USER_ID = ?',
+			[user_id]
+		);
+
 		return res.status(200).json({
 			status: 'success',
 			message: 'Message sent',
@@ -106,6 +111,12 @@ router.post('/send-broadcast', async (req, res) => {
 			receiver,
 			templateType: templateRows[0].TEMP_TYPE
 		});
+
+		await db.query(
+			'UPDATE user_subscription_usage SET MESSAGE_PER_DAY = CASE WHEN LAST_MESSAGE_DATE = CURDATE() THEN MESSAGE_PER_DAY + 1 ELSE 1 END, LAST_MESSAGE_DATE = CURDATE() WHERE USER_ID = ?',
+			[user_id]
+		);
+
 		return res.json({
 			status: 'sent',
 			messageId: broadcast.key.id,
@@ -150,6 +161,11 @@ router.post('/send-bulk', async (req, res) => {
 		const bulk = await session.socket.sendMessage(
 			`${normalizedReceiver}@s.whatsapp.net`,
 			{ text: message }
+		);
+
+		await db.query(
+			'UPDATE user_subscription_usage SET MESSAGE_PER_DAY = CASE WHEN LAST_MESSAGE_DATE = CURDATE() THEN MESSAGE_PER_DAY + 1 ELSE 1 END, LAST_MESSAGE_DATE = CURDATE() WHERE USER_ID = ?',
+			[user_id]
 		);
 
 		return res.json({
