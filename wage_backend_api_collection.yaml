@@ -5,7 +5,7 @@ meta:
   id: wrk_ea829738536a43968445bcd7231fed28
   created: 1782835841341
   modified: 1782835841341
-  description: ""
+  description: "WhatsApp Gateway API using Baileys"
 cookieJar:
   name: Default Jar
   meta:
@@ -19,3 +19,376 @@ environments:
     created: 1782835841357
     modified: 1782835841357
     isPrivate: false
+  data:
+    base_url: http://dev-wage-backend:8001
+    token: "eyJ..."
+resources:
+  - _type: request_group
+    _id: rg_001
+    parentId: wrk_ea829738536a43968445bcd7231fed28
+    name: Device
+    description: Device registration and status
+    environment: {}
+    environmentPropertyOrder: null
+    metaSortKey: -100
+
+  - _type: request
+    _id: req_101
+    parentId: rg_001
+    name: Register Device
+    url: "{{ base_url }}/api/device/register"
+    method: POST
+    body:
+      mimeType: application/json
+      text: |-
+        {
+          "account": "eb642f9d-beb7-483c-9a23-eca9d62d27e4",
+          "userId": "731377b4-6337-4e62-b0fa-1bd52b9e15d8"
+        }
+    parameters: []
+    headers:
+      - name: Content-Type
+        value: application/json
+      - name: Authorization
+        value: "Bearer {{ token }}"
+    authentication: {}
+    isPrivate: false
+    metaSortKey: -90
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+
+  - _type: request
+    _id: req_102
+    parentId: rg_001
+    name: Check Device Status
+    url: "{{ base_url }}/api/device/check-status?account=eb642f9d-beb7-483c-9a23-eca9d62d27e4&userId=731377b4-6337-4e62-b0fa-1bd52b9e15d8"
+    method: GET
+    body:
+      mimeType: ""
+      text: ""
+    parameters: []
+    headers:
+      - name: Authorization
+        value: "Bearer {{ token }}"
+    authentication: {}
+    isPrivate: false
+    metaSortKey: -80
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+
+  - _type: request_group
+    _id: rg_002
+    parentId: wrk_ea829738536a43968445bcd7231fed28
+    name: Message
+    description: Send messages
+    environment: {}
+    environmentPropertyOrder: null
+    metaSortKey: -50
+
+  - _type: request
+    _id: req_201
+    parentId: rg_002
+    name: Send Text
+    url: "{{ base_url }}/api/message/send"
+    method: POST
+    body:
+      mimeType: application/json
+      text: |-
+        {
+          "account": "eb642f9d-beb7-483c-9a23-eca9d62d27e4",
+          "receiver": "6281314225017",
+          "message": "test dari insomnia",
+          "userId": "731377b4-6337-4e62-b0fa-1bd52b9e15d8"
+        }
+    parameters: []
+    headers:
+      - name: Content-Type
+        value: application/json
+      - name: Authorization
+        value: "Bearer {{ token }}"
+    authentication: {}
+    isPrivate: false
+    metaSortKey: -40
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+
+  - _type: request
+    _id: req_202
+    parentId: rg_002
+    name: Send Broadcast (Template)
+    url: "{{ base_url }}/api/message/send-broadcast"
+    method: POST
+    body:
+      mimeType: application/json
+      text: |-
+        {
+          "broadcast_id": 1,
+          "nokey": "NOKEY001",
+          "account": "eb642f9d-beb7-483c-9a23-eca9d62d27e4",
+          "receiver": "6281314225017",
+          "template_id": 1,
+          "user_id": "731377b4-6337-4e62-b0fa-1bd52b9e15d8"
+        }
+    parameters: []
+    headers:
+      - name: Content-Type
+        value: application/json
+      - name: Authorization
+        value: "Bearer {{ token }}"
+    authentication: {}
+    isPrivate: false
+    metaSortKey: -30
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+
+  - _type: request
+    _id: req_203
+    parentId: rg_002
+    name: Send Bulk
+    url: "{{ base_url }}/api/message/send-bulk"
+    method: POST
+    body:
+      mimeType: application/json
+      text: |-
+        {
+          "account": "eb642f9d-beb7-483c-9a23-eca9d62d27e4",
+          "receiver": "6281314225017",
+          "message": "cok i",
+          "user_id": "731377b4-6337-4e62-b0fa-1bd52b9e15d8"
+        }
+    parameters: []
+    headers:
+      - name: Content-Type
+        value: application/json
+      - name: Authorization
+        value: "Bearer {{ token }}"
+    authentication: {}
+    isPrivate: false
+    metaSortKey: -20
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+
+  - _type: request_group
+    _id: rg_003
+    parentId: wrk_ea829738536a43968445bcd7231fed28
+    name: Session
+    description: Session management & QR
+    environment: {}
+    environmentPropertyOrder: null
+    metaSortKey: 0
+
+  - _type: request
+    _id: req_301
+    parentId: rg_003
+    name: Generate QR
+    url: "{{ base_url }}/api/generate-qr?account=eb642f9d-beb7-483c-9a23-eca9d62d27e4&userId=731377b4-6337-4e62-b0fa-1bd52b9e15d8"
+    method: GET
+    body:
+      mimeType: ""
+      text: ""
+    parameters: []
+    headers:
+      - name: Authorization
+        value: "Bearer {{ token }}"
+    authentication: {}
+    isPrivate: false
+    metaSortKey: 10
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+
+  - _type: request
+    _id: req_302
+    parentId: rg_003
+    name: Get Contacts
+    url: "{{ base_url }}/api/get-contacts?account=eb642f9d-beb7-483c-9a23-eca9d62d27e4&userId=731377b4-6337-4e62-b0fa-1bd52b9e15d8"
+    method: GET
+    body:
+      mimeType: ""
+      text: ""
+    parameters: []
+    headers:
+      - name: Authorization
+        value: "Bearer {{ token }}"
+    authentication: {}
+    isPrivate: false
+    metaSortKey: 20
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+
+  - _type: request
+    _id: req_303
+    parentId: rg_003
+    name: Session Debug
+    url: "{{ base_url }}/api/session-debug?account=eb642f9d-beb7-483c-9a23-eca9d62d27e4&userId=731377b4-6337-4e62-b0fa-1bd52b9e15d8"
+    method: GET
+    body:
+      mimeType: ""
+      text: ""
+    parameters: []
+    headers:
+      - name: Authorization
+        value: "Bearer {{ token }}"
+    authentication: {}
+    isPrivate: false
+    metaSortKey: 30
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+
+  - _type: request
+    _id: req_304
+    parentId: rg_003
+    name: Logout
+    url: "{{ base_url }}/api/logout"
+    method: POST
+    body:
+      mimeType: application/json
+      text: |-
+        {
+          "account": "eb642f9d-beb7-483c-9a23-eca9d62d27e4",
+          "userId": "731377b4-6337-4e62-b0fa-1bd52b9e15d8",
+          "fullRemove": false
+        }
+    parameters: []
+    headers:
+      - name: Content-Type
+        value: application/json
+      - name: Authorization
+        value: "Bearer {{ token }}"
+    authentication: {}
+    isPrivate: false
+    metaSortKey: 40
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+
+  - _type: request
+    _id: req_305
+    parentId: rg_003
+    name: Purge Session
+    url: "{{ base_url }}/api/purge-session"
+    method: POST
+    body:
+      mimeType: application/json
+      text: |-
+        {
+          "account": "eb642f9d-beb7-483c-9a23-eca9d62d27e4",
+          "userId": "731377b4-6337-4e62-b0fa-1bd52b9e15d8",
+          "removeStore": false
+        }
+    parameters: []
+    headers:
+      - name: Content-Type
+        value: application/json
+      - name: Authorization
+        value: "Bearer {{ token }}"
+    authentication: {}
+    isPrivate: false
+    metaSortKey: 50
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+
+  - _type: request
+    _id: req_306
+    parentId: rg_003
+    name: Broadcast Message (Batch)
+    url: "{{ base_url }}/api/broadcast-message"
+    method: POST
+    body:
+      mimeType: application/json
+      text: |-
+        {
+          "broadcasts": [
+            {
+              "sender": "eb642f9d-beb7-483c-9a23-eca9d62d27e4",
+              "receiver": "6281314225017",
+              "template": 1,
+              "userid": "731377b4-6337-4e62-b0fa-1bd52b9e15d8"
+            }
+          ]
+        }
+    parameters: []
+    headers:
+      - name: Content-Type
+        value: application/json
+      - name: Authorization
+        value: "Bearer {{ token }}"
+    authentication: {}
+    isPrivate: false
+    metaSortKey: 60
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+
+  - _type: request_group
+    _id: rg_004
+    parentId: wrk_ea829738536a43968445bcd7231fed28
+    name: Health
+    description: Health check
+    environment: {}
+    environmentPropertyOrder: null
+    metaSortKey: 100
+
+  - _type: request
+    _id: req_401
+    parentId: rg_004
+    name: Health Check
+    url: "{{ base_url }}/api/health"
+    method: GET
+    body:
+      mimeType: ""
+      text: ""
+    parameters: []
+    headers:
+      - name: Authorization
+        value: "Bearer {{ token }}"
+    authentication: {}
+    isPrivate: false
+    metaSortKey: 110
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
