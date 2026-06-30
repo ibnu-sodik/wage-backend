@@ -1,0 +1,21 @@
+type: collection.insomnia.rest/5.0
+schema_version: "5.1"
+name: Wage Backend API Collection
+meta:
+  id: wrk_ea829738536a43968445bcd7231fed28
+  created: 1782835841341
+  modified: 1782835841341
+  description: ""
+cookieJar:
+  name: Default Jar
+  meta:
+    id: jar_983069fd5a181744301d6e8ddc4ccdb575a31696
+    created: 1782835841362
+    modified: 1782835841362
+environments:
+  name: Base Environment
+  meta:
+    id: env_983069fd5a181744301d6e8ddc4ccdb575a31696
+    created: 1782835841357
+    modified: 1782835841357
+    isPrivate: false
