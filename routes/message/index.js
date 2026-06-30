@@ -29,10 +29,10 @@ router.post('/send', async (req, res) => {
 			{ text: message }
 		);
 
-		await db.query(
-			'UPDATE user_subscription_usage SET MESSAGE_PER_DAY = CASE WHEN LAST_MESSAGE_DATE IS NULL OR LAST_MESSAGE_DATE = CURDATE() THEN MESSAGE_PER_DAY + 1 ELSE 1 END, LAST_MESSAGE_DATE = CURDATE() WHERE USER_ID = ?',
-			[user_id]
-		);
+	await db.query(
+		'UPDATE user_subscription_usage SET MESSAGE_PER_DAY = CASE WHEN LAST_MESSAGE_DATE IS NULL OR LAST_MESSAGE_DATE = CURDATE() THEN MESSAGE_PER_DAY + 1 ELSE 1 END, LAST_MESSAGE_DATE = CURDATE() WHERE USER_ID = ?',
+		[userId]
+	);
 
 		return res.status(200).json({
 			status: 'success',
@@ -112,10 +112,10 @@ router.post('/send-broadcast', async (req, res) => {
 			templateType: templateRows[0].TEMP_TYPE
 		});
 
-		await db.query(
-			'UPDATE user_subscription_usage SET MESSAGE_PER_DAY = CASE WHEN LAST_MESSAGE_DATE IS NULL OR LAST_MESSAGE_DATE = CURDATE() THEN MESSAGE_PER_DAY + 1 ELSE 1 END, LAST_MESSAGE_DATE = CURDATE() WHERE USER_ID = ?',
-			[user_id]
-		);
+	await db.query(
+		'UPDATE user_subscription_usage SET MESSAGE_PER_DAY = CASE WHEN LAST_MESSAGE_DATE IS NULL OR LAST_MESSAGE_DATE = CURDATE() THEN MESSAGE_PER_DAY + 1 ELSE 1 END, LAST_MESSAGE_DATE = CURDATE() WHERE USER_ID = ?',
+		[user_id]
+	);
 
 		return res.json({
 			status: 'sent',
@@ -163,10 +163,10 @@ router.post('/send-bulk', async (req, res) => {
 			{ text: message }
 		);
 
-		await db.query(
-			'UPDATE user_subscription_usage SET MESSAGE_PER_DAY = CASE WHEN LAST_MESSAGE_DATE IS NULL OR LAST_MESSAGE_DATE = CURDATE() THEN MESSAGE_PER_DAY + 1 ELSE 1 END, LAST_MESSAGE_DATE = CURDATE() WHERE USER_ID = ?',
-			[user_id]
-		);
+	await db.query(
+		'UPDATE user_subscription_usage SET MESSAGE_PER_DAY = CASE WHEN LAST_MESSAGE_DATE IS NULL OR LAST_MESSAGE_DATE = CURDATE() THEN MESSAGE_PER_DAY + 1 ELSE 1 END, LAST_MESSAGE_DATE = CURDATE() WHERE USER_ID = ?',
+		[user_id]
+	);
 
 		return res.json({
 			status: 'sent',
@@ -188,7 +188,10 @@ router.post('/send-bulk', async (req, res) => {
 })
 
 function normalizeNumber(num) {
-	return num.replace(/\D/g, '').replace(/^0/, '62');
+	const clean = num.replace(/\D/g, '');
+	if (clean.startsWith('62')) return clean;
+	if (clean.startsWith('0')) return '62' + clean.slice(1);
+	return '62' + clean;
 }
 
 module.exports = router;

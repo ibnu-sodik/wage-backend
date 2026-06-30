@@ -4,13 +4,13 @@ const fs = require('fs');
 const path = require('path');
 
 // Max size (bytes) defaults (can override via env)
-const MAX_IMAGE_SIZE = parseInt(process.env.MAX_IMAGE_SIZE);
-const MAX_VIDEO_SIZE = parseInt(process.env.MAX_VIDEO_SIZE);
-const MAX_AUDIO_SIZE = parseInt(process.env.MAX_AUDIO_SIZE);
-const MAX_DOC_SIZE = parseInt(process.env.MAX_DOC_SIZE);
+const MAX_IMAGE_SIZE = parseInt(process.env.MAX_IMAGE_SIZE) || 10 * 1024 * 1024;   // 10MB
+const MAX_VIDEO_SIZE = parseInt(process.env.MAX_VIDEO_SIZE) || 50 * 1024 * 1024;   // 50MB
+const MAX_AUDIO_SIZE = parseInt(process.env.MAX_AUDIO_SIZE) || 16 * 1024 * 1024;   // 16MB
+const MAX_DOC_SIZE   = parseInt(process.env.MAX_DOC_SIZE)   || 10 * 1024 * 1024;   // 10MB
 
 // Optional: BASE_URL for stripping local absolute URLs and mapping to filesystem
-const APP_BASE_URL = (process.env.APP_BASE_URL).replace(/\/$/, '');
+const APP_BASE_URL = (process.env.APP_BASE_URL || '').replace(/\/$/, '');
 // Public uploads dir relative to project root (adjust if different)
 const UPLOADS_DIR = path.join(__dirname, '..', '..', 'uploads');
 
@@ -137,7 +137,6 @@ async function sendTemplatedMessage({ session, templateRow, receiverRow, senderR
 		if (!selectedType || filteredButtons.length === 0) throw new Error('No valid buttons of same type');
 		const convertedButtons = convertButtons(filteredButtons, selectedType);
 		const buttonMessage = { text: finalMessage, footer: footerText, templateButtons: convertedButtons, headerType: 1 };
-		console.log('[DEBUG] buttonMessage:', JSON.stringify(buttonMessage, null, 2));
 
 		// const buttonMessage = {
 		// 	text: "Pilih *Gender* anda",

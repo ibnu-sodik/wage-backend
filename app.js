@@ -19,8 +19,8 @@ function createApp() {
 	app.use(express.urlencoded({ extended: true }));
 
 	// Mount routes at root (backwards compatibility) and /api (preferred public path)
-	app.use('/', routes);
-	app.use('/api', routes);
+	app.use('/', verifyToken, routes);
+	app.use('/api', verifyToken, routes);
 
 	app.use('/device', verifyToken, routeDevice);
 	app.use('/api/device', verifyToken, routeDevice);

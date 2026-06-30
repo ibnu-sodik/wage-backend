@@ -33,7 +33,7 @@ function debounce(fn, delay) {
 	};
 }
 
-async function startSession(accountId, userId) {
+async function startSession(accountId, userId, retryCount = 0) {
 	const sessionKey = buildSessionKey(accountId, userId);
 
 	if (sessions[sessionKey]?.socket) return sessions[sessionKey];
@@ -68,7 +68,8 @@ async function startSession(accountId, userId) {
 			sessionPath,
 			accountId,
 			userId,
-			sessionKey
+			sessionKey,
+			retryCount
 		};
 
 		sock.ev.on("creds.update", debouncedSave);
@@ -94,6 +95,8 @@ async function startSession(accountId, userId) {
 			if (connection === "close") {
 				const code = lastDisconnect?.error?.output?.statusCode || lastDisconnect?.reason;
 				console.log(`[WA][${sessionKey}] Connection closed: ${code}`);
+				// Mark disconnected immediately so in-flight send requests get 'not connected'
+				if (sessions[sessionKey]) sessions[sessionKey].connected = false;
 
 				// Treat explicit 401 (HTTP unauthorized) the same as logged out
 				if (code === DisconnectReason.loggedOut || code === 401) {
@@ -119,11 +122,13 @@ async function startSession(accountId, userId) {
 					503
 				].includes(code);
 
-				if (shouldReconnect) {
-					console.log(`[WA][${sessionKey}] Reconnecting...`);
-					delete sessions[sessionKey];
-					setTimeout(() => startSession(accountId, userId), 1500);
-				}
+			if (shouldReconnect) {
+				const retryCount = (sessions[sessionKey] && sessions[sessionKey].retryCount) || 0;
+				const delay = Math.min(1500 * Math.pow(2, retryCount), 30000);
+				console.log(`[WA][${sessionKey}] Reconnecting in ${delay}ms (attempt ${retryCount + 1})...`);
+				delete sessions[sessionKey];
+				startSession(accountId, userId, retryCount + 1);
+			}
 			}
 		});
 

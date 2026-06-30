@@ -85,15 +85,23 @@ router.get("/generate-qr", async (req, res) => {
 router.post('/broadcast-message', async (req, res) => {
 	const broadcasts = req.body.broadcasts;
 	if (!Array.isArray(broadcasts) || !broadcasts.length) return res.status(400).json({ status: 'error', message: 'No data to broadcast' });
+
+	// Batch-fetch all unique templates in 1 query instead of N queries
+	const templateIds = [...new Set(broadcasts.map(b => b.template).filter(Boolean))];
+	const [templateRows] = await db.query('SELECT ID, TEMP_MESSAGE FROM temptbl WHERE ID IN (?)', [templateIds]);
+	const templateMap = Object.fromEntries(templateRows.map(r => [String(r.ID), r]));
+
 	const results = [];
 	for (const item of broadcasts) {
 		const { sender, receiver, template, userid } = item;
+		const tpl = templateMap[String(template)];
+		if (!tpl) { results.push({ receiver, status: 'failed', message: 'Template not found' }); continue; }
+
 		const session = await startSession(sender, userid);
 		if (!session.connected) { results.push({ receiver, status: 'failed', message: 'Sender not connected' }); continue; }
+
 		try {
-			const [rows] = await db.query('SELECT TEMP_MESSAGE FROM temptbl WHERE ID = ?', [template]);
-			if (!rows.length) { results.push({ receiver, status: 'failed', message: 'Template not found' }); continue; }
-			await session.socket.sendMessage(`${receiver}@s.whatsapp.net`, { text: rows[0].TEMP_MESSAGE });
+			await session.socket.sendMessage(`${receiver}@s.whatsapp.net`, { text: tpl.TEMP_MESSAGE });
 			results.push({ receiver, status: 'success', message: 'Sent' });
 		} catch (err) { results.push({ receiver, status: 'failed', message: err.message }); }
 	}
