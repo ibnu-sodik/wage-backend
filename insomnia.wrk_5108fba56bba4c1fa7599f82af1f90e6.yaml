@@ -7,28 +7,21 @@ meta:
   modified: 1782841159794
   description: ""
 collection:
-  - url: "{{ _.base_url }}/api/device/register"
-    name: Register Device
+  - url: "{{ _.base_url }}/api/health"
+    name: Api Health
     meta:
-      id: req_819d26a2b5704259804474a244681e88
-      created: 1782841158602
-      modified: 1782841241767
+      id: req_5c2f5842524e49d5a8de8ea1b7d7ac9a
+      created: 1782841651859
+      modified: 1782841697212
       isPrivate: false
       description: ""
-      sortKey: 0
-    method: POST
-    body:
-      mimeType: application/json
-      text: |
-        {
-          "account": "eb642f9d-beb7-483c-9a23-eca9d62d27e4",
-          "userId": "731377b4-6337-4e62-b0fa-1bd52b9e15d8"
-        }
+      sortKey: -1782841651859
+    method: GET
     headers:
-      - name: Content-Type
-        value: application/json
-      - name: Authorization
-        value: Bearer {{ _.token }}
+      - name: User-Agent
+        value: insomnia/12.6.0
+        description: ""
+        disabled: false
     settings:
       renderRequestBody: true
       encodeUrl: true
@@ -37,6 +30,51 @@ collection:
         send: true
         store: true
       rebuildPath: true
+  - name: Device
+    meta:
+      id: fld_4570aa81baf046eab17cf9202a9eda08
+      created: 1782841618068
+      modified: 1782841618068
+      sortKey: -1782841618068
+      description: ""
+    children:
+      - url: "{{ _.base_url }}/api/device/register"
+        name: Register Device
+        meta:
+          id: req_819d26a2b5704259804474a244681e88
+          created: 1782841158602
+          modified: 1782841637545
+          isPrivate: false
+          description: ""
+          sortKey: -1782841637492
+        method: POST
+        body:
+          mimeType: application/json
+          text: |
+            {
+              "account": "eb642f9d-beb7-483c-9a23-eca9d62d27e4",
+              "userId": "731377b4-6337-4e62-b0fa-1bd52b9e15d8"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: Authorization
+            value: Bearer {{ _.token }}
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+  - name: Message
+    meta:
+      id: fld_a270613b90734228b941b8330fdb6752
+      created: 1782841628496
+      modified: 1782841628496
+      sortKey: -1782841628496
+      description: ""
 cookieJar:
   name: Default Jar
   meta:
