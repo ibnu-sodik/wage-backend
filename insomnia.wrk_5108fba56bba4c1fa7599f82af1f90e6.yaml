@@ -1,0 +1,55 @@
+type: collection.insomnia.rest/5.0
+schema_version: "5.1"
+name: Wage Backend API Collection
+meta:
+  id: wrk_5108fba56bba4c1fa7599f82af1f90e6
+  created: 1782841159794
+  modified: 1782841159794
+  description: ""
+collection:
+  - url: "{{ _.base_url }}/api/device/register"
+    name: Register Device
+    meta:
+      id: req_819d26a2b5704259804474a244681e88
+      created: 1782841158602
+      modified: 1782841241767
+      isPrivate: false
+      description: ""
+      sortKey: 0
+    method: POST
+    body:
+      mimeType: application/json
+      text: |
+        {
+          "account": "eb642f9d-beb7-483c-9a23-eca9d62d27e4",
+          "userId": "731377b4-6337-4e62-b0fa-1bd52b9e15d8"
+        }
+    headers:
+      - name: Content-Type
+        value: application/json
+      - name: Authorization
+        value: Bearer {{ _.token }}
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+cookieJar:
+  name: Default Jar
+  meta:
+    id: jar_12b3306e08b44acc96750bf3a0875ec2
+    created: 1782835841362
+    modified: 1782835841362
+environments:
+  name: Base Environment
+  meta:
+    id: env_e5b6e25055724815bdc88fd496c04dea
+    created: 1782835841357
+    modified: 1782841262206
+    isPrivate: false
+  data:
+    base_url: api-wage.goblog-informatika.my.id
+    token: eyJ...
