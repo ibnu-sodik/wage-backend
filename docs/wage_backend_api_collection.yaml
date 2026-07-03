@@ -1,11 +1,11 @@
 type: collection.insomnia.rest/5.0
 schema_version: "5.1"
-name: Wage Backend API Collection
+name: Wage Backend API Collection (v2026-07-03)
 meta:
   id: wrk_ea829738536a43968445bcd7231fed28
   created: 1782835841341
-  modified: 1782835841341
-  description: "WhatsApp Gateway API using Baileys"
+  modified: 1751493618000
+  description: "WhatsApp Gateway API using Baileys - Poll, Location, List support"
 cookieJar:
   name: Default Jar
   meta:
@@ -177,6 +177,78 @@ collection:
               "account": "eb642f9d-beb7-483c-9a23-eca9d62d27e4",
               "receiver": "6281314225017",
               "message": "pesan bulk",
+              "user_id": "731377b4-6337-4e62-b0fa-1bd52b9e15d8"
+            }
+
+      - _type: request
+        _id: req_204
+        parentId: fld_002
+        name: Send Poll Message
+        url: "{{ _.base_url }}/api/message/send-broadcast"
+        method: POST
+        metaSortKey: -15
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: Authorization
+            value: "Bearer {{ _.token }}"
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "broadcast_id": 1,
+              "nokey": "POLL001",
+              "account": "eb642f9d-beb7-483c-9a23-eca9d62d27e4",
+              "receiver": "6281314225017",
+              "template_id": "poll-template-id",
+              "user_id": "731377b4-6337-4e62-b0fa-1bd52b9e15d8"
+            }
+
+      - _type: request
+        _id: req_205
+        parentId: fld_002
+        name: Send Location Message
+        url: "{{ _.base_url }}/api/message/send-broadcast"
+        method: POST
+        metaSortKey: -10
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: Authorization
+            value: "Bearer {{ _.token }}"
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "broadcast_id": 1,
+              "nokey": "LOC001",
+              "account": "eb642f9d-beb7-483c-9a23-eca9d62d27e4",
+              "receiver": "6281314225017",
+              "template_id": "location-template-id",
+              "user_id": "731377b4-6337-4e62-b0fa-1bd52b9e15d8"
+            }
+
+      - _type: request
+        _id: req_206
+        parentId: fld_002
+        name: Send List Message
+        url: "{{ _.base_url }}/api/message/send-broadcast"
+        method: POST
+        metaSortKey: -5
+        headers:
+          - name: Content-Type
+            value: application/json
+          - name: Authorization
+            value: "Bearer {{ _.token }}"
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "broadcast_id": 1,
+              "nokey": "LIST001",
+              "account": "eb642f9d-beb7-483c-9a23-eca9d62d27e4",
+              "receiver": "6281314225017",
+              "template_id": "list-template-id",
               "user_id": "731377b4-6337-4e62-b0fa-1bd52b9e15d8"
             }
 

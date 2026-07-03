@@ -1,5 +1,5 @@
 const db = require('../config/db');
-const { applyPlaceholders, groupButtonsByType, convertButtons } = require('../utils/template');
+const { applyPlaceholders } = require('../utils/template');
 const fs = require('fs');
 const path = require('path');
 
@@ -129,40 +129,39 @@ async function sendTemplatedMessage({ session, templateRow, receiverRow, senderR
 		} else {
 			throw new Error('Unsupported media type');
 		}
-	} else if (type === 'interactive-button') {
+	} else if (type === 'poll') {
 		const options = JSON.parse(TEMP_BUTTONS || '{}');
-		const footerText = options.footer || '';
-		const rawButtons = options.buttons || [];
-		const { type: selectedType, buttons: filteredButtons } = groupButtonsByType(rawButtons);
-		if (!selectedType || filteredButtons.length === 0) throw new Error('No valid buttons of same type');
-		const convertedButtons = convertButtons(filteredButtons, selectedType);
-		const buttonMessage = { text: finalMessage, footer: footerText, templateButtons: convertedButtons, headerType: 1 };
-
-		// const buttonMessage = {
-		// 	text: "Pilih *Gender* anda",
-		// 	footer: "Silakan pilih salah satu",
-		// 	templateButtons: [
-		// 		{
-		// 			index: 1,
-		// 			quickReplyButton: {
-		// 				displayText: "Pria",
-		// 				id: "btn-pria"
-		// 			}
-		// 		},
-		// 		{
-		// 			index: 2,
-		// 			quickReplyButton: {
-		// 				displayText: "Wanita",
-		// 				id: "btn-wanita"
-		// 			}
-		// 		}
-		// 	],
-		// 	headerType: 1 // 1 = text, 2 = media
-		// };
-		// console.log('[DEBUG] convertedButtons:', JSON.stringify(buttonMessage, null, 2));
-
-		// sentMsg = await session.socket.sendMessage(numberWA, { poll: { name: "pollName", values: ["option1", "option2", "option3"] } });
-		sentMsg = await session.socket.sendMessage(numberWA, buttonMessage);
+		const pollName = finalMessage || options.name || 'Poll';
+		const values = options.options || options.values || [];
+		if (!Array.isArray(values) || values.length < 2) throw new Error('Poll requires at least 2 options in TEMP_BUTTONS.options');
+		const selectableCount = parseInt(options.selectableCount ?? 1);
+		sentMsg = await session.socket.sendMessage(numberWA, {
+			poll: { name: pollName, values, selectableCount }
+		});
+	} else if (type === 'location') {
+		const options = JSON.parse(TEMP_BUTTONS || '{}');
+		if (!options.lat || !options.lng) throw new Error('Location requires TEMP_BUTTONS.lat and TEMP_BUTTONS.lng');
+		sentMsg = await session.socket.sendMessage(numberWA, {
+			location: {
+				degreesLatitude: parseFloat(options.lat),
+				degreesLongitude: parseFloat(options.lng),
+				name: options.name || finalMessage || '',
+				address: options.address || ''
+			}
+		});
+	} else if (type === 'list') {
+		const options = JSON.parse(TEMP_BUTTONS || '{}');
+		const sections = options.sections || [];
+		if (!sections.length) throw new Error('List message requires TEMP_BUTTONS.sections');
+		sentMsg = await session.socket.sendMessage(numberWA, {
+			list: {
+				title: options.title || finalMessage || '',
+				text: options.text || finalMessage || '',
+				footer: templateRow.TEMP_FOOTER || options.footer || '',
+				buttonText: options.buttonText || 'Lihat Pilihan',
+				sections
+			}
+		});
 	} else {
 		throw new Error('Unsupported template type');
 	}
