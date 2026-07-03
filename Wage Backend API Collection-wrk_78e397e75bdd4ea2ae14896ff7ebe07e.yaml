@@ -2,55 +2,32 @@ type: collection.insomnia.rest/5.0
 schema_version: "5.1"
 name: Wage Backend API Collection
 meta:
-  id: wrk_5108fba56bba4c1fa7599f82af1f90e6
-  created: 1782841159794
-  modified: 1782841159794
+  id: wrk_78e397e75bdd4ea2ae14896ff7ebe07e
+  created: 1783087200710
+  modified: 1783087200710
   description: ""
 collection:
-  - url: "{{ _.base_url }}/api/health"
-    name: Api Health
-    meta:
-      id: req_5c2f5842524e49d5a8de8ea1b7d7ac9a
-      created: 1782841651859
-      modified: 1782841697212
-      isPrivate: false
-      description: ""
-      sortKey: -1782841651859
-    method: GET
-    headers:
-      - name: User-Agent
-        value: insomnia/12.6.0
-        description: ""
-        disabled: false
-    settings:
-      renderRequestBody: true
-      encodeUrl: true
-      followRedirects: global
-      cookies:
-        send: true
-        store: true
-      rebuildPath: true
   - name: Device
     meta:
-      id: fld_4570aa81baf046eab17cf9202a9eda08
-      created: 1782841618068
-      modified: 1782841618068
-      sortKey: -1782841618068
+      id: fld_eaa35070eedd4b2d814c12eb243196b6
+      created: 1783087200717
+      modified: 1783087200717
+      sortKey: -100
       description: ""
     children:
       - url: "{{ _.base_url }}/api/device/register"
         name: Register Device
         meta:
-          id: req_819d26a2b5704259804474a244681e88
-          created: 1782841158602
-          modified: 1782841637545
+          id: req_1e93b4d2d6b84099a9b1839dca7ac237
+          created: 1783087200719
+          modified: 1783087200719
           isPrivate: false
           description: ""
-          sortKey: -1782841637492
+          sortKey: -90
         method: POST
         body:
           mimeType: application/json
-          text: |
+          text: |-
             {
               "account": "eb642f9d-beb7-483c-9a23-eca9d62d27e4",
               "userId": "731377b4-6337-4e62-b0fa-1bd52b9e15d8"
@@ -71,12 +48,12 @@ collection:
       - url: "{{ _.base_url }}/api/device/check-status"
         name: Check Device Status
         meta:
-          id: req_d1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6
-          created: 1782841637546
-          modified: 1782841637546
+          id: req_3e47131736224265b1b3740d3317bcb1
+          created: 1783087200721
+          modified: 1783087200721
           isPrivate: false
           description: ""
-          sortKey: -1782841637491
+          sortKey: -80
         method: GET
         parameters:
           - name: account
@@ -96,25 +73,25 @@ collection:
           rebuildPath: true
   - name: Message
     meta:
-      id: fld_a270613b90734228b941b8330fdb6752
-      created: 1782841628496
-      modified: 1782841628496
-      sortKey: -1782841628496
+      id: fld_d9b97aa0db5b4f818c9f08ea111baf33
+      created: 1783087200723
+      modified: 1783087200723
+      sortKey: -50
       description: ""
     children:
       - url: "{{ _.base_url }}/api/message/send"
         name: Send Text
         meta:
-          id: req_a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6
-          created: 1782841628500
-          modified: 1782841628500
+          id: req_a6340ba9ae62485287c4e8fd1b08e3b9
+          created: 1783087200725
+          modified: 1783087200725
           isPrivate: false
           description: ""
-          sortKey: -1782841628495
+          sortKey: -40
         method: POST
         body:
           mimeType: application/json
-          text: |
+          text: |-
             {
               "account": "eb642f9d-beb7-483c-9a23-eca9d62d27e4",
               "receiver": "6281314225017",
@@ -137,16 +114,16 @@ collection:
       - url: "{{ _.base_url }}/api/message/send-broadcast"
         name: Send Broadcast (Template)
         meta:
-          id: req_b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7
-          created: 1782841628501
-          modified: 1782841628501
+          id: req_d46fcfe9296e46f4991b6b000282af5a
+          created: 1783087200726
+          modified: 1783087200726
           isPrivate: false
           description: ""
-          sortKey: -1782841628494
+          sortKey: -30
         method: POST
         body:
           mimeType: application/json
-          text: |
+          text: |-
             {
               "broadcast_id": 1,
               "nokey": "NOKEY001",
@@ -171,16 +148,16 @@ collection:
       - url: "{{ _.base_url }}/api/message/send-bulk"
         name: Send Bulk
         meta:
-          id: req_c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8
-          created: 1782841628502
-          modified: 1782841628502
+          id: req_22c47ae91fd4474b9ff5669ab505fe9c
+          created: 1783087200728
+          modified: 1783087200728
           isPrivate: false
           description: ""
-          sortKey: -1782841628493
+          sortKey: -20
         method: POST
         body:
           mimeType: application/json
-          text: |
+          text: |-
             {
               "account": "eb642f9d-beb7-483c-9a23-eca9d62d27e4",
               "receiver": "6281314225017",
@@ -202,27 +179,27 @@ collection:
           rebuildPath: true
   - name: Session
     meta:
-      id: fld_e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9
-      created: 1782841628510
-      modified: 1782841628510
-      sortKey: -1782841628510
+      id: fld_d5532d83c6514b18b0810ecc9f4e05d2
+      created: 1783087200729
+      modified: 1783087200729
+      sortKey: 0
       description: ""
     children:
       - url: "{{ _.base_url }}/api/generate-qr"
         name: Generate QR
         meta:
-          id: req_d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9
-          created: 1782841628511
-          modified: 1783084243701
+          id: req_e5d87cfae8404e72840eb6db9ece25b6
+          created: 1783087200730
+          modified: 1783087200730
           isPrivate: false
           description: ""
-          sortKey: -1782841628509
+          sortKey: 10
         method: GET
         parameters:
           - name: account
-            value: c7ee7b58-32f1-48c8-b49f-04fa0f6e7036
+            value: eb642f9d-beb7-483c-9a23-eca9d62d27e4
           - name: userId
-            value: 3c758fbb-ebd0-4473-8c64-7785affb
+            value: 731377b4-6337-4e62-b0fa-1bd52b9e15d8
         headers:
           - name: Authorization
             value: Bearer {{ _.token }}
@@ -237,18 +214,18 @@ collection:
       - url: "{{ _.base_url }}/api/get-contacts"
         name: Get Contacts
         meta:
-          id: req_e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0
-          created: 1782841628512
-          modified: 1783084192864
+          id: req_398832656ed245b2b50431511c9f3c4d
+          created: 1783087200731
+          modified: 1783087200731
           isPrivate: false
           description: ""
-          sortKey: -1782841628508
+          sortKey: 20
         method: GET
         parameters:
           - name: account
-            value: c7ee7b58-32f1-48c8-b49f-04fa0f6e7036
+            value: eb642f9d-beb7-483c-9a23-eca9d62d27e4
           - name: userId
-            value: 3c758fbb-ebd0-4473-8c64-7785affb
+            value: 731377b4-6337-4e62-b0fa-1bd52b9e15d8
         headers:
           - name: Authorization
             value: Bearer {{ _.token }}
@@ -263,12 +240,12 @@ collection:
       - url: "{{ _.base_url }}/api/session-debug"
         name: Session Debug
         meta:
-          id: req_f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1
-          created: 1782841628513
-          modified: 1782841628513
+          id: req_48fb83015f8641e192e5aa0805666b1f
+          created: 1783087200731
+          modified: 1783087200731
           isPrivate: false
           description: ""
-          sortKey: -1782841628507
+          sortKey: 30
         method: GET
         parameters:
           - name: account
@@ -289,16 +266,16 @@ collection:
       - url: "{{ _.base_url }}/api/logout"
         name: Logout
         meta:
-          id: req_a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2
-          created: 1782841628514
-          modified: 1783084118384
+          id: req_27b10d705e664d2293e38ef1b3333aa4
+          created: 1783087200732
+          modified: 1783087200732
           isPrivate: false
           description: ""
-          sortKey: -1782841628506
+          sortKey: 40
         method: POST
         body:
           mimeType: application/json
-          text: |
+          text: |-
             {
               "account": "eb642f9d-beb7-483c-9a23-eca9d62d27e4",
               "userId": "731377b4-6337-4e62-b0fa-1bd52b9e15d8",
@@ -320,16 +297,16 @@ collection:
       - url: "{{ _.base_url }}/api/purge-session"
         name: Purge Session
         meta:
-          id: req_b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3
-          created: 1782841628515
-          modified: 1782841628515
+          id: req_2094d96b084a49da87c89f0f0b6cb1aa
+          created: 1783087200733
+          modified: 1783087200733
           isPrivate: false
           description: ""
-          sortKey: -1782841628505
+          sortKey: 50
         method: POST
         body:
           mimeType: application/json
-          text: |
+          text: |-
             {
               "account": "eb642f9d-beb7-483c-9a23-eca9d62d27e4",
               "userId": "731377b4-6337-4e62-b0fa-1bd52b9e15d8",
@@ -351,16 +328,16 @@ collection:
       - url: "{{ _.base_url }}/api/broadcast-message"
         name: Broadcast Message (Batch)
         meta:
-          id: req_c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4
-          created: 1782841628516
-          modified: 1782841628516
+          id: req_1f0a080456904d76ac08b201340b3f41
+          created: 1783087200734
+          modified: 1783087200734
           isPrivate: false
           description: ""
-          sortKey: -1782841628504
+          sortKey: 60
         method: POST
         body:
           mimeType: application/json
-          text: |
+          text: |-
             {
               "broadcasts": [
                 {
@@ -384,19 +361,48 @@ collection:
             send: true
             store: true
           rebuildPath: true
+  - name: Health
+    meta:
+      id: fld_3194ee7050c043d3846fc3981a7f73b6
+      created: 1783087200735
+      modified: 1783087200735
+      sortKey: 100
+      description: ""
+    children:
+      - url: "{{ _.base_url }}/api/health"
+        name: Health Check
+        meta:
+          id: req_bd243f98b66a4df88754fbac5dd40a92
+          created: 1783087200735
+          modified: 1783087200735
+          isPrivate: false
+          description: ""
+          sortKey: 110
+        method: GET
+        headers:
+          - name: Authorization
+            value: Bearer {{ _.token }}
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
 cookieJar:
   name: Default Jar
   meta:
-    id: jar_12b3306e08b44acc96750bf3a0875ec2
-    created: 1782835841362
-    modified: 1782835841362
+    id: jar_ac14752176e8445db2b9008820320f06
+    created: 1783087200713
+    modified: 1783087200713
 environments:
   name: Base Environment
   meta:
-    id: env_e5b6e25055724815bdc88fd496c04dea
-    created: 1782835841357
-    modified: 1783084125736
+    id: env_59037f5f39d543918bc1d25d25877e08
+    created: 1783087200714
+    modified: 1783087200714
     isPrivate: false
   data:
-    base_url: api-wage.goblog-informatika.my.id
-    token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL3dhZ2UuZ29ibG9nLWluZm9ybWF0aWthLm15LmlkLyIsImlhdCI6MTc4MzA4MjY3NSwiZXhwIjoxNzgzMDg0NDc1LCJkYXRhIjp7ImZpcnN0X25hbWUiOiJOQVpVTEFIIiwibGFzdF9uYW1lIjoiUkFITUFXQVRJIiwidXNlcm5hbWUiOiJuYXp1bGlzIiwiZW1haWwiOiJuYXp1bGFocmFobWF3YXRpQGdtYWlsLmNvbSJ9fQ.jZdKWamyyx98GRkqQOFmWRICyS9honPUaiiCPg6wyLk
+    base_url: http://dev-wage-backend:8001
+    token: eyJ...
