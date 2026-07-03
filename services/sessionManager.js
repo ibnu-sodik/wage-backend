@@ -282,6 +282,14 @@ async function startPairingSession(accountId, userId, phoneNumber) {
 	const sessionPath = buildSessionPath(accountId, userId);
 	if (!fs.existsSync(sessionPath)) fs.mkdirSync(sessionPath, { recursive: true });
 
+	// Clean stale credentials from previous attempts to avoid Connection Closed
+	const existingFiles = fs.readdirSync(sessionPath);
+	for (const f of existingFiles) {
+		if (f.endsWith('.json') && f !== 'store.json') {
+			try { fs.rmSync(path.join(sessionPath, f), { force: true }); } catch {}
+		}
+	}
+
 	const { state: authState, saveCreds } = await useMultiFileAuthState(sessionPath);
 	const debouncedSave = debounce(saveCreds, 500);
 	const versionInfo = await fetchLatestBaileysVersion().catch(() => null);
@@ -310,9 +318,41 @@ async function startPairingSession(accountId, userId, phoneNumber) {
 
 	sock.ev.on('creds.update', debouncedSave);
 
+	// Wait for underlying WebSocket to be connected (not session authenticated)
+	const wsReady = new Promise((resolve, reject) => {
+		const timeout = setTimeout(() => reject(new Error('WebSocket ready timeout')), 15000);
+		
+		const checkReady = () => {
+			if (sock.ws && sock.ws.readyState === 1) { // WebSocket.OPEN
+				clearTimeout(timeout);
+				resolve();
+			}
+		};
+		
+		checkReady();
+		
+		if (sock.ws) {
+			sock.ws.on('open', () => {
+				clearTimeout(timeout);
+				resolve();
+			});
+			sock.ws.on('error', (err) => {
+				clearTimeout(timeout);
+				reject(new Error(`WebSocket error: ${err.message}`));
+			});
+			sock.ws.on('close', () => {
+				clearTimeout(timeout);
+				reject(new Error('WebSocket closed before open'));
+			});
+		}
+	});
+
 	// Request pairing code after socket is ready (not yet registered)
 	let code = null;
 	try {
+		// Wait for WS to open
+		await wsReady;
+
 		// Baileys requires calling requestPairingCode only when not already registered
 		if (!authState.creds.registered) {
 			// Normalize: strip non-digits
@@ -338,9 +378,9 @@ async function startPairingSession(accountId, userId, phoneNumber) {
 			console.log(`[WA][PAIR][${sessionKey}] Connected as ${number}`);
 		}
 		if (connection === 'close') {
-			const code = lastDisconnect?.error?.output?.statusCode || lastDisconnect?.reason;
+			const closeCode = lastDisconnect?.error?.output?.statusCode || lastDisconnect?.reason;
 			if (sessions[sessionKey]) sessions[sessionKey].connected = false;
-			if (code === DisconnectReason.loggedOut || code === 401) {
+			if (closeCode === DisconnectReason.loggedOut || closeCode === 401) {
 				await purgeSessionCredentials(accountId, { removeStore: false, userId }).catch(() => {});
 				delete sessions[sessionKey];
 				delete pairingSessions[sessionKey];

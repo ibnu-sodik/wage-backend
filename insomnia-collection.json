@@ -1,0 +1,273 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-07-04T01:10:00.000Z",
+  "__export_source": "insomnia.desktop.app:v2024.1.0",
+  "resources": [
+    {
+      "_id": "wrk_87cdad56e12e4fae9c51ae9a530c2517",
+      "_type": "workspace",
+      "name": "Wage Backend API Collection",
+      "description": "WhatsApp Gateway API using Baileys",
+      "scope": "collection",
+      "parentId": null
+    },
+    {
+      "_id": "env_b6d7538bb9c440a1afa3c8022a69baf5",
+      "_type": "environment",
+      "name": "Base Environment",
+      "data": {
+        "base_url": "https://api-wage.goblog-informatika.my.id",
+        "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL3dhZ2UuZ29ibG9nLWluZm9ybWF0aWthLm15LmlkLyIsImlhdCI6MTc4MzEwMDM2NSwiZXhwIjoxNzgzMTAyMTY1LCJkYXRhIjp7ImZpcnN0X25hbWUiOiJOQVpVTEFIIiwibGFzdF9uYW1lIjoiUkFITUFXQVRJIiwidXNlcm5hbWUiOiJuYXp1bGlzIiwiZW1haWwiOiJuYXp1bGFocmFobWF3YXRpQGdtYWlsLmNvbSJ9fQ.-CDdYOxuDeNbbdiS9C0Fw6-VdjGUu591iRWk887HmOk"
+      },
+      "parentId": "wrk_87cdad56e12e4fae9c51ae9a530c2517"
+    },
+    {
+      "_id": "jar_0fbd365aaaa341d7983405f4e898c1fa",
+      "_type": "cookie_jar",
+      "name": "Default Jar",
+      "cookies": [],
+      "parentId": "wrk_87cdad56e12e4fae9c51ae9a530c2517"
+    },
+    {
+      "_id": "fld_595c81ed8d084828aec4771eba23ad67",
+      "_type": "request_group",
+      "name": "Device",
+      "parentId": "wrk_87cdad56e12e4fae9c51ae9a530c2517",
+      "metaSortKey": -100
+    },
+    {
+      "_id": "req_3e611fa7ab4f41b08aa39cb84ad832e7",
+      "_type": "request",
+      "name": "Register Device",
+      "url": "{{ _.base_url }}/api/device/register",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"account\": \"d9156c65-8f89-4c9f-a4b7-fb7e4abb9cb4\",\n  \"userId\": \"b36ffcc7-9eee-4225-89f2-57017fad\"\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.token }}" }
+      ],
+      "parentId": "fld_595c81ed8d084828aec4771eba23ad67",
+      "metaSortKey": -90
+    },
+    {
+      "_id": "req_3693f890ced04fde80f4785e6e1e3821",
+      "_type": "request",
+      "name": "Check Device Status",
+      "url": "{{ _.base_url }}/api/device/check-status",
+      "method": "GET",
+      "parameters": [
+        { "name": "account", "value": "eb642f9d-beb7-483c-9a23-eca9d62d27e4" },
+        { "name": "userId", "value": "731377b4-6337-4e62-b0fa-1bd52b9e15d8" }
+      ],
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.token }}" }
+      ],
+      "parentId": "fld_595c81ed8d084828aec4771eba23ad67",
+      "metaSortKey": -80
+    },
+    {
+      "_id": "req_628554578390443dbf42322ec7fd1acb",
+      "_type": "request",
+      "name": "Pairing Code",
+      "url": "{{ _.base_url }}/api/device/request-pairing-code",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"account\": \"d9156c65-8f89-4c9f-a4b7-fb7e4abb9cb4\",\n  \"userId\": \"b36ffcc7-9eee-4225-89f2-57017fad\",\n  \"phoneNumber\": \"6285117394611\"\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.token }}" }
+      ],
+      "parentId": "fld_595c81ed8d084828aec4771eba23ad67",
+      "metaSortKey": -70
+    },
+    {
+      "_id": "fld_9130b957bdf14d22ae5a7fc06017e8ae",
+      "_type": "request_group",
+      "name": "Message",
+      "parentId": "wrk_87cdad56e12e4fae9c51ae9a530c2517",
+      "metaSortKey": -50
+    },
+    {
+      "_id": "req_af1e4bdd93a6408ea8b35acd8948b140",
+      "_type": "request",
+      "name": "Send Text",
+      "url": "{{ _.base_url }}/api/message/send",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"account\": \"eb642f9d-beb7-483c-9a23-eca9d62d27e4\",\n  \"receiver\": \"6281314225017\",\n  \"message\": \"test dari insomnia\",\n  \"userId\": \"731377b4-6337-4e62-b0fa-1bd52b9e15d8\"\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.token }}" }
+      ],
+      "parentId": "fld_9130b957bdf14d22ae5a7fc06017e8ae",
+      "metaSortKey": -40
+    },
+    {
+      "_id": "req_81b78b4b443d4c559f77485d91894bf5",
+      "_type": "request",
+      "name": "Send Broadcast (Template)",
+      "url": "{{ _.base_url }}/api/message/send-broadcast",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"broadcast_id\": 1,\n  \"nokey\": \"NOKEY001\",\n  \"account\": \"eb642f9d-beb7-483c-9a23-eca9d62d27e4\",\n  \"receiver\": \"6281314225017\",\n  \"template_id\": 1,\n  \"user_id\": \"731377b4-6337-4e62-b0fa-1bd52b9e15d8\"\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.token }}" }
+      ],
+      "parentId": "fld_9130b957bdf14d22ae5a7fc06017e8ae",
+      "metaSortKey": -30
+    },
+    {
+      "_id": "req_f6051fc185734d6ead6d14d383e0b714",
+      "_type": "request",
+      "name": "Send Bulk",
+      "url": "{{ _.base_url }}/api/message/send-bulk",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"account\": \"eb642f9d-beb7-483c-9a23-eca9d62d27e4\",\n  \"receiver\": \"6281314225017\",\n  \"message\": \"pesan bulk\",\n  \"user_id\": \"731377b4-6337-4e62-b0fa-1bd52b9e15d8\"\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.token }}" }
+      ],
+      "parentId": "fld_9130b957bdf14d22ae5a7fc06017e8ae",
+      "metaSortKey": -20
+    },
+    {
+      "_id": "fld_bbc3c499cc724e588b0945dadde7eefa",
+      "_type": "request_group",
+      "name": "Session",
+      "parentId": "wrk_87cdad56e12e4fae9c51ae9a530c2517",
+      "metaSortKey": 0
+    },
+    {
+      "_id": "req_366181895ae14cf99886a576e380d2d1",
+      "_type": "request",
+      "name": "Generate QR",
+      "url": "{{ _.base_url }}/api/generate-qr",
+      "method": "GET",
+      "parameters": [
+        { "name": "account", "value": "eb642f9d-beb7-483c-9a23-eca9d62d27e4" },
+        { "name": "userId", "value": "731377b4-6337-4e62-b0fa-1bd52b9e15d8" }
+      ],
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.token }}" }
+      ],
+      "parentId": "fld_bbc3c499cc724e588b0945dadde7eefa",
+      "metaSortKey": 10
+    },
+    {
+      "_id": "req_291eec570e2047d49befe6b7f6ce469a",
+      "_type": "request",
+      "name": "Get Contacts",
+      "url": "{{ _.base_url }}/api/get-contacts",
+      "method": "GET",
+      "parameters": [
+        { "name": "account", "value": "eb642f9d-beb7-483c-9a23-eca9d62d27e4" },
+        { "name": "userId", "value": "731377b4-6337-4e62-b0fa-1bd52b9e15d8" }
+      ],
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.token }}" }
+      ],
+      "parentId": "fld_bbc3c499cc724e588b0945dadde7eefa",
+      "metaSortKey": 20
+    },
+    {
+      "_id": "req_bbc661e3332a4b09a0c533fcce85729a",
+      "_type": "request",
+      "name": "Session Debug",
+      "url": "{{ _.base_url }}/api/session-debug",
+      "method": "GET",
+      "parameters": [
+        { "name": "account", "value": "eb642f9d-beb7-483c-9a23-eca9d62d27e4" },
+        { "name": "userId", "value": "731377b4-6337-4e62-b0fa-1bd52b9e15d8" }
+      ],
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.token }}" }
+      ],
+      "parentId": "fld_bbc3c499cc724e588b0945dadde7eefa",
+      "metaSortKey": 30
+    },
+    {
+      "_id": "req_20c1264f133140de8bb1a7e4ea46db54",
+      "_type": "request",
+      "name": "Logout",
+      "url": "{{ _.base_url }}/api/logout",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"account\": \"eb642f9d-beb7-483c-9a23-eca9d62d27e4\",\n  \"userId\": \"731377b4-6337-4e62-b0fa-1bd52b9e15d8\",\n  \"fullRemove\": false\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.token }}" }
+      ],
+      "parentId": "fld_bbc3c499cc724e588b0945dadde7eefa",
+      "metaSortKey": 40
+    },
+    {
+      "_id": "req_fd674c3fa5984187809f8362a85c1a30",
+      "_type": "request",
+      "name": "Purge Session",
+      "url": "{{ _.base_url }}/api/purge-session",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"account\": \"eb642f9d-beb7-483c-9a23-eca9d62d27e4\",\n  \"userId\": \"731377b4-6337-4e62-b0fa-1bd52b9e15d8\",\n  \"removeStore\": false\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.token }}" }
+      ],
+      "parentId": "fld_bbc3c499cc724e588b0945dadde7eefa",
+      "metaSortKey": 50
+    },
+    {
+      "_id": "req_06a84a2f514343ffaadb1c9a70e6e04f",
+      "_type": "request",
+      "name": "Broadcast Message (Batch)",
+      "url": "{{ _.base_url }}/api/broadcast-message",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"broadcasts\": [\n    {\n      \"sender\": \"eb642f9d-beb7-483c-9a23-eca9d62d27e4\",\n      \"receiver\": \"6281314225017\",\n      \"template\": 1,\n      \"userid\": \"731377b4-6337-4e62-b0fa-1bd52b9e15d8\"\n    }\n  ]\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.token }}" }
+      ],
+      "parentId": "fld_bbc3c499cc724e588b0945dadde7eefa",
+      "metaSortKey": 60
+    },
+    {
+      "_id": "fld_1eafa98156af4ce1883c7ce89622695b",
+      "_type": "request_group",
+      "name": "Health",
+      "parentId": "wrk_87cdad56e12e4fae9c51ae9a530c2517",
+      "metaSortKey": 100
+    },
+    {
+      "_id": "req_da6e92ee0f984b0995562ea51f1dcd5a",
+      "_type": "request",
+      "name": "Health Check",
+      "url": "{{ _.base_url }}/api/health",
+      "method": "GET",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ _.token }}" }
+      ],
+      "parentId": "fld_1eafa98156af4ce1883c7ce89622695b",
+      "metaSortKey": 110
+    }
+  ]
+}
