@@ -20,14 +20,15 @@ const sessions = {};
 // Store pairing code sessions (phone → pairing code string)
 const pairingSessions = {};
 
-// Random browser fingerprints to avoid detection
+// Browser fingerprints: [platform, browser, version]
+// Format must match Baileys expectation for pairing to work
 const BROWSER_FINGERPRINTS = [
-	["Chrome (Windows)", "Chrome", "120.0.6099.217"],
-	["Chrome (Mac)", "Chrome", "120.0.6099.217"],
-	["Firefox (Windows)", "Firefox", "121.0"],
-	["Firefox (Mac)", "Firefox", "121.0"],
-	["Safari (Mac)", "Safari", "17.2"],
-	["Edge (Windows)", "Edge", "120.0.2210.91"]
+	["Windows", "Chrome", "120.0.6099.217"],
+	["Mac OS", "Chrome", "120.0.6099.217"],
+	["Windows", "Firefox", "121.0"],
+	["Mac OS", "Firefox", "121.0"],
+	["Mac OS", "Safari", "17.2"],
+	["Windows", "Edge", "120.0.2210.91"]
 ];
 
 function getRandomBrowser() {
@@ -76,7 +77,8 @@ async function startSession(accountId, userId, retryCount = 0) {
 			logger: P({ level: "silent" }),
 			printQRInTerminal: false,
 			browser: getRandomBrowser(),
-			version: versionInfo?.version
+			version: versionInfo?.version,
+			syncFullHistory: false
 		});
 
 		sessions[sessionKey] = {
@@ -274,20 +276,19 @@ async function startPairingSession(accountId, userId, phoneNumber) {
 	// Already connected
 	if (sessions[sessionKey]?.connected) return { status: 'already_connected', session: sessions[sessionKey] };
 
-	// Already waiting for pairing code
+	// Already waiting for pairing code — still valid
 	if (pairingSessions[sessionKey]?.code) {
 		return { status: 'pending', code: pairingSessions[sessionKey].code };
 	}
 
 	const sessionPath = buildSessionPath(accountId, userId);
-	if (!fs.existsSync(sessionPath)) fs.mkdirSync(sessionPath, { recursive: true });
-
-	// Clean stale credentials from previous attempts to avoid Connection Closed
-	const existingFiles = fs.readdirSync(sessionPath);
-	for (const f of existingFiles) {
-		if (f.endsWith('.json') && f !== 'store.json') {
-			try { fs.rmSync(path.join(sessionPath, f), { force: true }); } catch {}
+	// Clean everything in the session folder — full reset
+	if (fs.existsSync(sessionPath)) {
+		for (const entry of fs.readdirSync(sessionPath)) {
+			try { fs.rmSync(path.join(sessionPath, entry), { recursive: true, force: true }); } catch {}
 		}
+	} else {
+		fs.mkdirSync(sessionPath, { recursive: true });
 	}
 
 	const { state: authState, saveCreds } = await useMultiFileAuthState(sessionPath);
@@ -299,7 +300,10 @@ async function startPairingSession(accountId, userId, phoneNumber) {
 		logger: P({ level: 'silent' }),
 		printQRInTerminal: false,
 		browser: getRandomBrowser(),
-		version: versionInfo?.version
+		version: versionInfo?.version,
+		syncFullHistory: false,
+		markOnlineOnConnect: false,
+		generateHighQualityLinkPreview: false,
 	});
 
 	pairingSessions[sessionKey] = { socket: sock, code: null, phoneNumber };
@@ -313,25 +317,64 @@ async function startPairingSession(accountId, userId, phoneNumber) {
 		accountId,
 		userId,
 		sessionKey,
-		retryCount: 0
+		retryCount: 0,
+		pairingInProgress: true,  // flag: this session is in pairing mode
 	};
 
+	// Register event listeners BEFORE any async operation
 	sock.ev.on('creds.update', debouncedSave);
 
-	// Wait for underlying WebSocket to be connected (not session authenticated)
+	// This promise resolves once pairing is complete
+	let pairingResolve;
+	const pairingComplete = new Promise((resolve) => { pairingResolve = resolve; });
+
+	sock.ev.on('connection.update', async ({ connection, lastDisconnect, isNewLogin }) => {
+		console.log(`[PAIR][${sessionKey}] connection.update: ${connection}${isNewLogin ? ' (newLogin)' : ''}`);
+		if (connection === 'open') {
+			const number = sock.user?.id?.split(':')[0] || 'unknown';
+			Object.assign(sessions[sessionKey], { connected: true, pairingInProgress: false, qr: null, whatsapp_number: number });
+			delete pairingSessions[sessionKey];
+			pairingResolve({ status: 'connected', whatsapp_number: number });
+			console.log(`[PAIR][${sessionKey}] Connected as ${number}`);
+		}
+		if (connection === 'close') {
+			const closeCode = lastDisconnect?.error?.output?.statusCode || lastDisconnect?.reason;
+			console.log(`[PAIR][${sessionKey}] Connection closed: code=${closeCode}`);
+			const sess = sessions[sessionKey];
+			if (sess) sess.connected = false;
+
+			// loggedOut / unauthorized: remove creds and clean up
+			if (closeCode === DisconnectReason.loggedOut || closeCode === 401) {
+				await purgeSessionCredentials(accountId, { removeStore: false, userId }).catch(() => {});
+				delete sessions[sessionKey];
+				delete pairingSessions[sessionKey];
+				pairingResolve({ status: 'logged_out' });
+				return;
+			}
+
+			// In pairing mode — if the socket closes before pairing completes,
+			// don't retry automatically (user will see error and retry from API)
+			if (sess?.pairingInProgress) {
+				delete sessions[sessionKey];
+				delete pairingSessions[sessionKey];
+				const errMsg = closeCode === DisconnectReason.connectionLost
+					? 'Connection lost to WhatsApp. Check your internet/VPN.'
+					: `WhatsApp connection closed (code ${closeCode}). Try again in a moment.`;
+				pairingResolve({ status: 'error', message: errMsg });
+			}
+		}
+	});
+
+	// Wait for socket WebSocket to reach open state
 	const wsReady = new Promise((resolve, reject) => {
-		const timeout = setTimeout(() => reject(new Error('WebSocket ready timeout')), 15000);
-		
-		const checkReady = () => {
-			if (sock.ws && sock.ws.readyState === 1) { // WebSocket.OPEN
+		const timeout = setTimeout(() => reject(new Error('WebSocket ready timeout')), 30000);
+
+		if (sock.ws) {
+			if (sock.ws.readyState === 1) { // WebSocket.OPEN
 				clearTimeout(timeout);
 				resolve();
+				return;
 			}
-		};
-		
-		checkReady();
-		
-		if (sock.ws) {
 			sock.ws.on('open', () => {
 				clearTimeout(timeout);
 				resolve();
@@ -344,62 +387,49 @@ async function startPairingSession(accountId, userId, phoneNumber) {
 				clearTimeout(timeout);
 				reject(new Error('WebSocket closed before open'));
 			});
+		} else {
+			// sock.ws might not be created yet — poll for it
+			const interval = setInterval(() => {
+				if (sock.ws) {
+					clearInterval(interval);
+					clearTimeout(timeout);
+					if (sock.ws.readyState === 1) resolve();
+					else {
+						sock.ws.on('open', () => { clearTimeout(timeout); resolve(); });
+						sock.ws.on('error', (err) => { clearTimeout(timeout); reject(new Error(`WebSocket error: ${err.message}`)); });
+						sock.ws.on('close', () => { clearTimeout(timeout); reject(new Error('WebSocket closed before open')); });
+					}
+				}
+			}, 100);
 		}
 	});
 
-	// Request pairing code after socket is ready (not yet registered)
 	let code = null;
 	try {
-		// Wait for WS to open
 		await wsReady;
+		console.log(`[PAIR][${sessionKey}] WebSocket ready, requesting pairing code for ${phoneNumber}`);
 
-		// Baileys requires calling requestPairingCode only when not already registered
 		if (!authState.creds.registered) {
-			// Normalize: strip non-digits
-			const cleanPhone = phoneNumber.replace(/\D/g, '');
-			code = await sock.requestPairingCode(cleanPhone);
+			code = await sock.requestPairingCode(phoneNumber);
 			pairingSessions[sessionKey].code = code;
+			console.log(`[PAIR][${sessionKey}] Pairing code received: ${code}`);
 		} else {
-			// Already registered — just start normal session
+			console.log(`[PAIR][${sessionKey}] Already registered, starting normal session`);
 			delete pairingSessions[sessionKey];
 			return startSession(accountId, userId);
 		}
 	} catch (e) {
+		// Clean up on error
 		delete sessions[sessionKey];
 		delete pairingSessions[sessionKey];
 		throw new Error(`Failed to request pairing code: ${e.message}`);
 	}
 
-	sock.ev.on('connection.update', async ({ connection, lastDisconnect }) => {
-		if (connection === 'open') {
-			const number = sock.user.id.split(':')[0];
-			Object.assign(sessions[sessionKey], { connected: true, qr: null, whatsapp_number: number });
-			delete pairingSessions[sessionKey];
-			console.log(`[WA][PAIR][${sessionKey}] Connected as ${number}`);
-		}
-		if (connection === 'close') {
-			const closeCode = lastDisconnect?.error?.output?.statusCode || lastDisconnect?.reason;
-			if (sessions[sessionKey]) sessions[sessionKey].connected = false;
-			if (closeCode === DisconnectReason.loggedOut || closeCode === 401) {
-				await purgeSessionCredentials(accountId, { removeStore: false, userId }).catch(() => {});
-				delete sessions[sessionKey];
-				delete pairingSessions[sessionKey];
-			}
-		}
-	});
-
-	sock.ev.on('messages.upsert', (m) => {
-		try {
-			for (const msg of (m.messages || [])) {
-				const remote = msg.key?.remoteJid ?? '<unknown>';
-				console.log(`[WA][PAIR][MSG] session=${sessionKey} remote=${remote}`);
-			}
-		} catch {}
-	});
-
+	// Return immediately with the code
 	return { status: 'pairing_code_sent', code };
 }
 
+// Returns the pairing code waiting to be entered
 function getPairingSession(accountId, userId) {
 	return pairingSessions[buildSessionKey(accountId, userId)] || null;
 }
