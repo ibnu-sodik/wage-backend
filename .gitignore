@@ -2,6 +2,7 @@
 
 scripts/
 planning/
+db-structure/
 markdown/
 # Node dependencies
 node_modules/
