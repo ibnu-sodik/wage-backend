@@ -3,6 +3,13 @@ const router = express.Router();
 const db = require('../../config/db');
 const { startSession } = require('../../services/sessionManager');
 const { sendTemplatedMessage } = require('../../services/messageService');
+const { canSend, markSent } = require('../../utils/rateLimiter');
+
+// Random delay between 2-7 seconds to avoid detection
+function randomDelay() {
+	const delay = Math.floor(Math.random() * 5000) + 2000;
+	return new Promise(resolve => setTimeout(resolve, delay));
+}
 
 router.post('/send', async (req, res) => {
 	const { account, receiver, message, userId } = req.body;
@@ -10,6 +17,11 @@ router.post('/send', async (req, res) => {
 	if (!account) return res.status(400).json({ status: 'error', message: 'account ID is required' });
 	if (!receiver) return res.status(400).json({ status: 'error', message: 'receiver number is required' });
 	if (!userId) return res.status(400).json({ status: 'error', message: 'user ID is required' });
+
+	// Rate limit check
+	if (!canSend(account)) {
+		return res.status(429).json({ status: 'error', message: 'Rate limit exceeded. Please try again later.' });
+	}
 
 	const normalizedReceiver = normalizeNumber(receiver);
 
@@ -24,10 +36,16 @@ router.post('/send', async (req, res) => {
 			return res.status(400).json({ status: 'error', message: 'Device not connected' });
 		}
 
+		// Add random delay before sending
+		await randomDelay();
+
 		const send = await session.socket.sendMessage(
 			`${normalizedReceiver}@s.whatsapp.net`,
 			{ text: message }
 		);
+
+		// Mark message as sent for rate limiting
+		markSent(account);
 
 	await db.query(
 		'UPDATE user_subscription_usage SET MESSAGE_PER_DAY = CASE WHEN LAST_MESSAGE_DATE IS NULL OR LAST_MESSAGE_DATE = CURDATE() THEN MESSAGE_PER_DAY + 1 ELSE 1 END, LAST_MESSAGE_DATE = CURDATE() WHERE USER_ID = ?',
@@ -62,6 +80,11 @@ router.post('/send-broadcast', async (req, res) => {
 	if (!template_id) return res.status(400).json({ status: 'error', message: 'template ID is required' });
 	if (!user_id) return res.status(400).json({ status: 'error', message: 'user ID is required' });
 
+	// Rate limit check
+	if (!canSend(account)) {
+		return res.status(429).json({ status: 'error', message: 'Rate limit exceeded. Please try again later.' });
+	}
+
 	try {
 		const session = await startSession(account, user_id);
 
@@ -72,6 +95,9 @@ router.post('/send-broadcast', async (req, res) => {
 		if (!session.connected) {
 			return res.status(400).json({ status: 'error', message: 'Device not connected' });
 		}
+
+		// Add random delay before sending
+		await randomDelay();
 
 		const [templateRows] = await db.query(
 			'SELECT TEMP_TYPE, TEMP_FILE, TEMP_MESSAGE, TEMP_BUTTONS FROM temptbl WHERE ID = ? AND USER_ID = ?',
@@ -112,6 +138,9 @@ router.post('/send-broadcast', async (req, res) => {
 			templateType: templateRows[0].TEMP_TYPE
 		});
 
+		// Mark message as sent for rate limiting
+		markSent(account);
+
 	await db.query(
 		'UPDATE user_subscription_usage SET MESSAGE_PER_DAY = CASE WHEN LAST_MESSAGE_DATE IS NULL OR LAST_MESSAGE_DATE = CURDATE() THEN MESSAGE_PER_DAY + 1 ELSE 1 END, LAST_MESSAGE_DATE = CURDATE() WHERE USER_ID = ?',
 		[user_id]
@@ -145,6 +174,11 @@ router.post('/send-bulk', async (req, res) => {
 	if (!message) return res.status(400).json({ status: 'error', message: 'message is required' });
 	if (!user_id) return res.status(400).json({ status: 'error', message: 'user ID is required' });
 
+	// Rate limit check
+	if (!canSend(account)) {
+		return res.status(429).json({ status: 'error', message: 'Rate limit exceeded. Please try again later.' });
+	}
+
 	const normalizedReceiver = normalizeNumber(receiver);
 
 	try {
@@ -158,10 +192,16 @@ router.post('/send-bulk', async (req, res) => {
 			return res.status(400).json({ status: 'error', message: 'Device not connected' });
 		}
 
+		// Add random delay before sending
+		await randomDelay();
+
 		const bulk = await session.socket.sendMessage(
 			`${normalizedReceiver}@s.whatsapp.net`,
 			{ text: message }
 		);
+
+		// Mark message as sent for rate limiting
+		markSent(account);
 
 	await db.query(
 		'UPDATE user_subscription_usage SET MESSAGE_PER_DAY = CASE WHEN LAST_MESSAGE_DATE IS NULL OR LAST_MESSAGE_DATE = CURDATE() THEN MESSAGE_PER_DAY + 1 ELSE 1 END, LAST_MESSAGE_DATE = CURDATE() WHERE USER_ID = ?',
