@@ -17,6 +17,9 @@ if (!fs.existsSync(SESSIONS_DIR)) fs.mkdirSync(SESSIONS_DIR, { recursive: true }
 
 const sessions = {};
 
+// Store pairing code sessions (phone → pairing code string)
+const pairingSessions = {};
+
 // Random browser fingerprints to avoid detection
 const BROWSER_FINGERPRINTS = [
 	["Chrome (Windows)", "Chrome", "120.0.6099.217"],
@@ -261,8 +264,110 @@ function emptySessionFolder(accountId, userId = null) {
 	return { removed, message: 'session folder emptied' };
 }
 
+/**
+ * Start a session using pairing code (no QR scan needed).
+ * Phone number must be in international format without '+' (e.g. "6281234567890")
+ */
+async function startPairingSession(accountId, userId, phoneNumber) {
+	const sessionKey = buildSessionKey(accountId, userId);
+
+	// Already connected
+	if (sessions[sessionKey]?.connected) return { status: 'already_connected', session: sessions[sessionKey] };
+
+	// Already waiting for pairing code
+	if (pairingSessions[sessionKey]?.code) {
+		return { status: 'pending', code: pairingSessions[sessionKey].code };
+	}
+
+	const sessionPath = buildSessionPath(accountId, userId);
+	if (!fs.existsSync(sessionPath)) fs.mkdirSync(sessionPath, { recursive: true });
+
+	const { state: authState, saveCreds } = await useMultiFileAuthState(sessionPath);
+	const debouncedSave = debounce(saveCreds, 500);
+	const versionInfo = await fetchLatestBaileysVersion().catch(() => null);
+
+	const sock = makeWASocket({
+		auth: authState,
+		logger: P({ level: 'silent' }),
+		printQRInTerminal: false,
+		browser: getRandomBrowser(),
+		version: versionInfo?.version
+	});
+
+	pairingSessions[sessionKey] = { socket: sock, code: null, phoneNumber };
+	sessions[sessionKey] = {
+		socket: sock,
+		connected: false,
+		qr: null,
+		lastQr: null,
+		whatsapp_number: null,
+		sessionPath,
+		accountId,
+		userId,
+		sessionKey,
+		retryCount: 0
+	};
+
+	sock.ev.on('creds.update', debouncedSave);
+
+	// Request pairing code after socket is ready (not yet registered)
+	let code = null;
+	try {
+		// Baileys requires calling requestPairingCode only when not already registered
+		if (!authState.creds.registered) {
+			// Normalize: strip non-digits
+			const cleanPhone = phoneNumber.replace(/\D/g, '');
+			code = await sock.requestPairingCode(cleanPhone);
+			pairingSessions[sessionKey].code = code;
+		} else {
+			// Already registered — just start normal session
+			delete pairingSessions[sessionKey];
+			return startSession(accountId, userId);
+		}
+	} catch (e) {
+		delete sessions[sessionKey];
+		delete pairingSessions[sessionKey];
+		throw new Error(`Failed to request pairing code: ${e.message}`);
+	}
+
+	sock.ev.on('connection.update', async ({ connection, lastDisconnect }) => {
+		if (connection === 'open') {
+			const number = sock.user.id.split(':')[0];
+			Object.assign(sessions[sessionKey], { connected: true, qr: null, whatsapp_number: number });
+			delete pairingSessions[sessionKey];
+			console.log(`[WA][PAIR][${sessionKey}] Connected as ${number}`);
+		}
+		if (connection === 'close') {
+			const code = lastDisconnect?.error?.output?.statusCode || lastDisconnect?.reason;
+			if (sessions[sessionKey]) sessions[sessionKey].connected = false;
+			if (code === DisconnectReason.loggedOut || code === 401) {
+				await purgeSessionCredentials(accountId, { removeStore: false, userId }).catch(() => {});
+				delete sessions[sessionKey];
+				delete pairingSessions[sessionKey];
+			}
+		}
+	});
+
+	sock.ev.on('messages.upsert', (m) => {
+		try {
+			for (const msg of (m.messages || [])) {
+				const remote = msg.key?.remoteJid ?? '<unknown>';
+				console.log(`[WA][PAIR][MSG] session=${sessionKey} remote=${remote}`);
+			}
+		} catch {}
+	});
+
+	return { status: 'pairing_code_sent', code };
+}
+
+function getPairingSession(accountId, userId) {
+	return pairingSessions[buildSessionKey(accountId, userId)] || null;
+}
+
 module.exports = {
 	startSession,
+	startPairingSession,
+	getPairingSession,
 	getSession,
 	getAllSessions,
 	removeSession,

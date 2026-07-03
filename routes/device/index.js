@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const fs = require('fs').promises;
-const { buildSessionPath, getSession } = require('../../services/sessionManager');
+const { buildSessionPath, getSession, startPairingSession, getPairingSession } = require('../../services/sessionManager');
 
 router.post('/register', async (req, res) => {
 	const { account, userId } = req.body;
@@ -107,6 +107,100 @@ router.get('/check-status', async (req, res) => {
 		return res.status(500).json({ status: 'error', message: 'Internal server error' });
 	}
 
+});
+
+// Pairing code: initiate without QR scan
+router.post('/request-pairing-code', async (req, res) => {
+	const { account, userId, phoneNumber } = req.body;
+
+	if (!account) {
+		return res.status(400).json({
+			status: 'error', message: 'account ID is required'
+		});
+	}
+
+	if (!userId) {
+		return res.status(400).json({
+			status: 'error', message: 'user ID is required'
+		});
+	}
+
+	if (!phoneNumber) {
+		return res.status(400).json({
+			status: 'error', message: 'phoneNumber is required (e.g. 6281234567890)'
+		});
+	}
+
+	// Validate phone format
+	const cleanPhone = phoneNumber.replace(/\D/g, '');
+	if (!cleanPhone.startsWith('62') || cleanPhone.length < 10) {
+		return res.status(400).json({
+			status: 'error',
+			message: 'Invalid phone number. Must start with 62 (Indonesia) and be at least 10 digits'
+		});
+	}
+
+	try {
+		const result = await startPairingSession(account, userId, cleanPhone);
+		return res.json({
+			status: result.status,
+			account,
+			pairingCode: result.code || null,
+			message: result.status === 'pairing_code_sent'
+				? 'Pairing code generated. Open WhatsApp → Linked Devices → Link with phone number and enter the code.'
+				: result.status === 'already_connected'
+					? 'Device already connected via WhatsApp'
+					: result.status === 'pending'
+						? 'Pairing already in progress, code is still valid'
+						: 'Unexpected status'
+		});
+	} catch (error) {
+		console.error('Error requesting pairing code:', error);
+		return res.status(500).json({
+			status: 'error',
+			message: error.message || 'Failed to request pairing code',
+			account
+		});
+	}
+});
+
+// Check status of a pending pairing code session
+router.get('/pairing-code-status', async (req, res) => {
+	const account = req.query.account;
+	const userId = req.query.userId;
+
+	if (!account) {
+		return res.status(400).json({ status: 'error', message: 'account ID is required' });
+	}
+	if (!userId) {
+		return res.status(400).json({ status: 'error', message: 'user ID is required' });
+	}
+
+	const session = getSession(account, userId);
+	const pairing = getPairingSession(account, userId);
+
+	if (session?.connected) {
+		return res.json({
+			status: 'connected',
+			account,
+			whatsapp_number: session.whatsapp_number || ''
+		});
+	}
+
+	if (pairing?.code) {
+		return res.json({
+			status: 'pairing_pending',
+			account,
+			pairingCode: pairing.code,
+			message: 'Waiting for user to enter pairing code in WhatsApp'
+		});
+	}
+
+	return res.json({
+		status: 'not_found',
+		account,
+		message: 'No active pairing session found. Request a new pairing code.'
+	});
 });
 
 module.exports = router;
