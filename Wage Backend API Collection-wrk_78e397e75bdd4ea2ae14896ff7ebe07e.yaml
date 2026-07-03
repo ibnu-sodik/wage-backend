@@ -401,8 +401,8 @@ environments:
   meta:
     id: env_59037f5f39d543918bc1d25d25877e08
     created: 1783087200714
-    modified: 1783087200714
+    modified: 1783087503808
     isPrivate: false
   data:
-    base_url: http://dev-wage-backend:8001
-    token: eyJ...
+    base_url: api-wage.goblog-informatika.my.id
+    token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL3dhZ2UuZ29ibG9nLWluZm9ybWF0aWthLm15LmlkLyIsImlhdCI6MTc4MzA4MjY3NSwiZXhwIjoxNzgzMDg0NDc1LCJkYXRhIjp7ImZpcnN0X25hbWUiOiJOQVpVTEFIIiwibGFzdF9uYW1lIjoiUkFITUFXQVRJIiwidXNlcm5hbWUiOiJuYXp1bGlzIiwiZW1haWwiOiJuYXp1bGFocmFobWF3YXRpQGdtYWlsLmNvbSJ9fQ.jZdKWamyyx98GRkqQOFmWRICyS9honPUaiiCPg6wyLk
