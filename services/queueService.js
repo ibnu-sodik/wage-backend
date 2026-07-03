@@ -27,8 +27,9 @@ function addRecipientJob({ headerId, nokey, deviceId, userId, messageType, messa
     );
 }
 
-// Worker processing jobs for named job type 'send-recipient'
-queue.process('send-recipient', QUEUE_CONCURRENCY, async (job) => {
+// Worker — Bull v1.x process(concurrency, fn) only, no 3-arg overload
+queue.process(QUEUE_CONCURRENCY, async (job) => {
+    if (job.name !== 'send-recipient') return;
     const data = job.data;
     const { headerId, nokey, deviceId, userId, messageType, messageText, templateId } = data;
 
@@ -81,7 +82,7 @@ queue.process('send-recipient', QUEUE_CONCURRENCY, async (job) => {
         );
 		await db.query(
 			'UPDATE user_subscription_usage SET MESSAGE_PER_DAY = CASE WHEN LAST_MESSAGE_DATE IS NULL OR LAST_MESSAGE_DATE = CURDATE() THEN MESSAGE_PER_DAY + 1 ELSE 1 END, LAST_MESSAGE_DATE = CURDATE() WHERE USER_ID = ?',
-			[user_id]
+			[userId]
 		);
 
         // After marking recipient sent, re-evaluate header status in transaction-safe way
