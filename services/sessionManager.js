@@ -17,6 +17,23 @@ if (!fs.existsSync(SESSIONS_DIR)) fs.mkdirSync(SESSIONS_DIR, { recursive: true }
 
 const sessions = {};
 
+// Random browser fingerprints to avoid detection
+const BROWSER_FINGERPRINTS = [
+	["Chrome (Windows)", "Chrome", "120.0.6099.217"],
+	["Chrome (Mac)", "Chrome", "120.0.6099.217"],
+	["Firefox (Windows)", "Firefox", "121.0"],
+	["Firefox (Mac)", "Firefox", "121.0"],
+	["Safari (Mac)", "Safari", "17.2"],
+	["Edge (Windows)", "Edge", "120.0.2210.91"]
+];
+
+function getRandomBrowser() {
+	return BROWSER_FINGERPRINTS[Math.floor(Math.random() * BROWSER_FINGERPRINTS.length)];
+}
+
+const RECONNECT_BASE_DELAY = parseInt(process.env.WA_RECONNECT_BASE_DELAY) || 30000;
+const MAX_RECONNECT_RETRIES = parseInt(process.env.WA_MAX_RETRIES) || 5;
+
 function buildSessionKey(accountId, userId) {
 	return userId ? `${userId}::${accountId}` : accountId;
 }
@@ -55,7 +72,7 @@ async function startSession(accountId, userId, retryCount = 0) {
 			auth: authState,
 			logger: P({ level: "silent" }),
 			printQRInTerminal: false,
-			browser: ["Chrome (Windows)", "Chrome", "120.0.6099.217"],
+			browser: getRandomBrowser(),
 			version: versionInfo?.version
 		});
 
@@ -124,8 +141,16 @@ async function startSession(accountId, userId, retryCount = 0) {
 
 			if (shouldReconnect) {
 				const retryCount = (sessions[sessionKey] && sessions[sessionKey].retryCount) || 0;
-				const delay = Math.min(1500 * Math.pow(2, retryCount), 30000);
-				console.log(`[WA][${sessionKey}] Reconnecting in ${delay}ms (attempt ${retryCount + 1})...`);
+				if (retryCount >= MAX_RECONNECT_RETRIES) {
+					console.log(`[WA][${sessionKey}] Max reconnect retries (${MAX_RECONNECT_RETRIES}) reached. Logging out.`);
+					try {
+						await purgeSessionCredentials(accountId, { removeStore: false, userId });
+					} catch (e) {}
+					delete sessions[sessionKey];
+					return;
+				}
+				const delay = Math.min(RECONNECT_BASE_DELAY * Math.pow(2, retryCount), 600000);
+				console.log(`[WA][${sessionKey}] Reconnecting in ${delay}ms (attempt ${retryCount + 1}/${MAX_RECONNECT_RETRIES})...`);
 				delete sessions[sessionKey];
 				startSession(accountId, userId, retryCount + 1);
 			}

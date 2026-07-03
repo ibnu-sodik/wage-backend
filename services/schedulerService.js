@@ -9,9 +9,9 @@ const MAX_RETRIES = parseInt(process.env.SCHEDULER_MAX_RETRIES) || 3;
 const BASE_BACKOFF_SECONDS =
   parseInt(process.env.SCHEDULER_BASE_BACKOFF_SECONDS) || 60; // exponential base
 const DEVICE_CONCURRENCY =
-  parseInt(process.env.SCHEDULER_DEVICE_CONCURRENCY) || 5;
-const RATE_MIN_MS = parseInt(process.env.SCHEDULER_RATE_MIN_MS) || 300;
-const RATE_MAX_MS = parseInt(process.env.SCHEDULER_RATE_MAX_MS) || 1000;
+  parseInt(process.env.SCHEDULER_DEVICE_CONCURRENCY) || 2; // Reduced from 5 to 2
+const RATE_MIN_MS = parseInt(process.env.SCHEDULER_RATE_MIN_MS) || 2000; // Increased from 300 to 2000ms
+const RATE_MAX_MS = parseInt(process.env.SCHEDULER_RATE_MAX_MS) || 7000; // Increased from 1000 to 7000ms
 
 let _timer = null;
 let _running = false;
