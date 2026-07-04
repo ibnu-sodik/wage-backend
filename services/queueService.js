@@ -77,13 +77,13 @@ queue.process(QUEUE_CONCURRENCY, async (job) => {
 
         // mark sent
         await db.query(
-            'UPDATE scbcdt SET IS_SENT = 1, DELIVERY_AT = ?, LAST_ERROR = NULL, NEXT_ATTEMPT_AT = NULL WHERE ID = ? AND NOKEY = ? AND USER_ID = ?', 
+            'UPDATE scbcdt SET IS_SENT = 1, DELIVERY_AT = ?, LAST_ERROR = NULL, NEXT_ATTEMPT_AT = NULL WHERE ID = ? AND NOKEY = ? AND USER_ID = ?',
             [new Date(), headerId, nokey, userId]
         );
-		await db.query(
-			'UPDATE user_subscription_usage SET MESSAGE_PER_DAY = CASE WHEN LAST_MESSAGE_DATE IS NULL OR LAST_MESSAGE_DATE = CURDATE() THEN MESSAGE_PER_DAY + 1 ELSE 1 END, LAST_MESSAGE_DATE = CURDATE() WHERE USER_ID = ?',
-			[userId]
-		);
+        await db.query(
+            'UPDATE user_subscription_usage SET MESSAGE_PER_DAY = CASE WHEN LAST_MESSAGE_DATE IS NULL OR LAST_MESSAGE_DATE = CURDATE() THEN MESSAGE_PER_DAY + 1 ELSE 1 END, LAST_MESSAGE_DATE = CURDATE() WHERE USER_ID = ?',
+            [userId]
+        );
 
         // After marking recipient sent, re-evaluate header status in transaction-safe way
         const conn = await db.getConnection();

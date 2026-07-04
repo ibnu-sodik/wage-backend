@@ -90,8 +90,8 @@ async function processHeader(row) {
         const holdSeconds = Math.max(5, Math.ceil(POLL_INTERVAL_MS / 1000));
         try {
           await db.query(
-            "UPDATE scbcdt SET NEXT_ATTEMPT_AT = DATE_ADD(NOW(), INTERVAL ? SECOND) WHERE ID = ? AND NOKEY = ? AND USER_ID = ?",
-            [holdSeconds, ID, nokey, USER_ID],
+            "UPDATE user_subscription_usage SET MESSAGE_PER_DAY = CASE WHEN LAST_MESSAGE_DATE IS NULL OR LAST_MESSAGE_DATE = CURDATE() THEN MESSAGE_PER_DAY + 1 ELSE 1 END, LAST_MESSAGE_DATE = CURDATE() WHERE USER_ID = ?",
+            [USER_ID],
           );
         } catch (ex) {
           /* non-fatal */
