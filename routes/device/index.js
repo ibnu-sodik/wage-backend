@@ -109,6 +109,70 @@ router.get('/check-status', async (req, res) => {
 
 });
 
+// Batch status check for multiple devices
+router.post('/batch-status', async (req, res) => {
+	const { accounts, userId } = req.body;
+
+	if (!Array.isArray(accounts) || accounts.length === 0) {
+		return res.status(400).json({
+			status: 'error',
+			message: 'accounts array is required and must not be empty'
+		});
+	}
+
+	if (!userId) {
+		return res.status(400).json({
+			status: 'error',
+			message: 'userId is required'
+		});
+	}
+
+	const results = {};
+
+	for (const accountId of accounts) {
+		const sessionPath = buildSessionPath(accountId, userId);
+
+		try {
+			const stats = await fs.stat(sessionPath);
+			if (!stats.isDirectory()) {
+				results[accountId] = {
+					status: 'not_registered',
+					whatsapp_number: ''
+				};
+				continue;
+			}
+
+			const session = getSession(accountId, userId);
+			if (!session) {
+				results[accountId] = {
+					status: 'not_connected',
+					whatsapp_number: ''
+				};
+			} else {
+				results[accountId] = {
+					status: session.connected ? 'connected' : 'not_connected',
+					whatsapp_number: session.whatsapp_number || ''
+				};
+			}
+		} catch (error) {
+			if (error.code === 'ENOENT') {
+				results[accountId] = {
+					status: 'not_registered',
+					whatsapp_number: ''
+				};
+			} else {
+				console.error(`Error checking status for account ${accountId}:`, error);
+				results[accountId] = {
+					status: 'error',
+					whatsapp_number: ''
+				};
+			}
+		}
+	}
+
+	return res.json(results);
+});
+
 // Pairing code: initiate without QR scan
 router.post('/request-pairing-code', async (req, res) => {
 	const { account, userId, phoneNumber } = req.body;
