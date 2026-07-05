@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const fs = require('fs');
-const db = require('../config/db');
-const { startSession, getSession, removeSession, purgeSessionCredentials, emptySessionFolder, SESSIONS_DIR, buildSessionPath } = require('../services/sessionManager');
-const { sendTemplatedMessage } = require('../services/messageService');
-const { applyPlaceholders } = require('../utils/template');
+const db = require('../../config/db');
+const { startSession, getSession, removeSession, purgeSessionCredentials, emptySessionFolder, SESSIONS_DIR, buildSessionPath } = require('../../services/sessionManager');
+const { sendTemplatedMessage } = require('../../services/messageService');
+const { applyPlaceholders } = require('../../utils/template');
 
 // Generate QR New
 router.get("/generate-qr", async (req, res) => {
