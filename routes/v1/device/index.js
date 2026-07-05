@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const fs = require('fs').promises;
-const { buildSessionPath, getSession, startPairingSession, getPairingSession } = require('../../services/sessionManager');
+const { buildSessionPath, getSession, startPairingSession, getPairingSession } = require('../../../services/sessionManager');
 
 router.post('/register', async (req, res) => {
 	const { account, userId } = req.body;

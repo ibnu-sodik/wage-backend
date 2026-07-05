@@ -6,11 +6,11 @@ const coreRoutes = require('../core');
 router.use('/', coreRoutes);
 
 // Mount device routes
-const deviceRoutes = require('../device');
+const deviceRoutes = require('./device');
 router.use('/device', deviceRoutes);
 
 // Mount message routes
-const messageRoutes = require('../message');
+const messageRoutes = require('./message');
 router.use('/message', messageRoutes);
 
 // Health endpoint for v1

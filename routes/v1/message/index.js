@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../../config/db');
-const { startSession } = require('../../services/sessionManager');
-const { sendTemplatedMessage } = require('../../services/messageService');
-const { canSend, markSent } = require('../../utils/rateLimiter');
+const db = require('../../../config/db');
+const { startSession } = require('../../../services/sessionManager');
+const { sendTemplatedMessage } = require('../../../services/messageService');
+const { canSend, markSent } = require('../../../utils/rateLimiter');
 
 // Random delay between 2-7 seconds to avoid detection
 function randomDelay() {

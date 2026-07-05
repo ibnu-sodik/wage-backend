@@ -2,8 +2,6 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 
-const routeDevice = require('./routes/device');
-const routeMessage = require('./routes/message');
 const v1Routes = require('./routes/v1');
 
 const crypto = require('crypto');
