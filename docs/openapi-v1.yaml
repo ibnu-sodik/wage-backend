@@ -1,0 +1,532 @@
+openapi: 3.0.3
+info:
+  title: WAGE Backend API
+  version: 1.0.0
+  description: |
+    WhatsApp Gateway Engine - Backend API for managing WhatsApp sessions, sending messages, and device management.
+
+    ## Authentication
+    All endpoints require Bearer token authentication via the `Authorization` header.
+
+  contact:
+    name: API Support
+    email: support@example.com
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Development server
+  - url: https://api.yourdomain.com/api/v1
+    description: Production server
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Health
+    description: System health check
+  - name: Session
+    description: WhatsApp session management
+  - name: Device
+    description: Device registration and status
+  - name: Message
+    description: Message sending operations
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from authentication
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+          example: Error description
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+        version:
+          type: string
+          example: v1
+        timezone:
+          type: string
+          example: Asia/Jakarta
+        utcTime:
+          type: string
+          format: date-time
+        realTime:
+          type: string
+
+    QRResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [need_qr, connected, waiting, device_not_registered]
+        account:
+          type: string
+        qr:
+          type: string
+          description: QR code data (only present when status is need_qr)
+        whatsapp_number:
+          type: string
+          description: Connected WhatsApp number (only when connected)
+
+    ContactsResponse:
+      type: object
+      properties:
+        status:
+          type: boolean
+        total:
+          type: integer
+        contacts:
+          type: array
+          items:
+            type: object
+            properties:
+              waId:
+                type: string
+              name:
+                type: string
+
+    SessionDebugResponse:
+      type: object
+      properties:
+        account:
+          type: string
+        registered:
+          type: boolean
+        active:
+          type: boolean
+        connected:
+          type: boolean
+        hasQR:
+          type: boolean
+        whatsapp_number:
+          type: string
+        authFiles:
+          type: integer
+        recentEvents:
+          type: array
+          items:
+            type: string
+
+    LogoutResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        account:
+          type: string
+        folderRemoved:
+          type: boolean
+        emptied:
+          type: object
+          nullable: true
+        message:
+          type: string
+
+    MessageSentResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        message:
+          type: string
+        receiver:
+          type: string
+        messageId:
+          type: string
+        delivery_at:
+          type: integer
+
+    BroadcastResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              receiver:
+                type: string
+              status:
+                type: string
+              message:
+                type: string
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Check API health and system information
+      security: []
+      responses:
+        "200":
+          description: System is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /generate-qr:
+    get:
+      tags:
+        - Session
+      summary: Generate QR code for WhatsApp authentication
+      description: |
+        Generates a QR code for WhatsApp Web authentication. The device must be registered first.
+        Waits up to 30 seconds for QR code generation.
+      parameters:
+        - name: account
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Account identifier
+        - name: userId
+          in: query
+          required: false
+          schema:
+            type: string
+          description: User ID for multi-user support
+      responses:
+        "200":
+          description: QR code or connection status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QRResponse"
+        "404":
+          description: Device not registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /broadcast-message:
+    post:
+      tags:
+        - Message
+      summary: Batch broadcast plain text messages
+      description: Send plain text messages to multiple recipients using templates
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - broadcasts
+              properties:
+                broadcasts:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      sender:
+                        type: string
+                      receiver:
+                        type: string
+                      template:
+                        type: integer
+                      userid:
+                        type: string
+      responses:
+        "200":
+          description: Broadcast completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BroadcastResponse"
+
+  /get-contacts:
+    get:
+      tags:
+        - Session
+      summary: Get WhatsApp contacts
+      description: Retrieve contacts from active WhatsApp session
+      parameters:
+        - name: account
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: userId
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Contacts retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactsResponse"
+        "400":
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /session-debug:
+    get:
+      tags:
+        - Session
+      summary: Debug session information
+      description: Get detailed session debug information
+      parameters:
+        - name: account
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Session debug info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionDebugResponse"
+
+  /logout:
+    post:
+      tags:
+        - Session
+      summary: Logout from WhatsApp session
+      description: Logout and optionally delete session folder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - account
+                - userId
+              properties:
+                account:
+                  type: string
+                userId:
+                  type: string
+                fullRemove:
+                  type: boolean
+                  description: If true, delete session folder completely
+      responses:
+        "200":
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogoutResponse"
+
+  /purge-session:
+    post:
+      tags:
+        - Session
+      summary: Purge session credentials
+      description: Remove session credentials without logging out active session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - account
+              properties:
+                account:
+                  type: string
+                userId:
+                  type: string
+                removeStore:
+                  type: boolean
+      responses:
+        "200":
+          description: Session purged
+        "400":
+          description: Cannot purge active session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /device/register:
+    post:
+      tags:
+        - Device
+      summary: Register a new device
+      description: Create session folder for a new device
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - account
+              properties:
+                account:
+                  type: string
+                userId:
+                  type: string
+      responses:
+        "200":
+          description: Device registered or already exists
+
+  /device/check-status:
+    get:
+      tags:
+        - Device
+      summary: Check device connection status
+      description: Check if device is registered and connected
+      parameters:
+        - name: account
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: userId
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Device status
+        "404":
+          description: Device not registered
+
+  /message/send:
+    post:
+      tags:
+        - Message
+      summary: Send a simple text message
+      description: Send a plain text message to a single recipient
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - account
+                - receiver
+                - message
+                - userId
+              properties:
+                account:
+                  type: string
+                receiver:
+                  type: string
+                  description: Phone number (will be normalized to 62xxx format)
+                message:
+                  type: string
+                userId:
+                  type: string
+      responses:
+        "200":
+          description: Message sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageSentResponse"
+        "400":
+          description: Device not connected or validation error
+        "429":
+          description: Rate limit exceeded
+
+  /message/send-broadcast:
+    post:
+      tags:
+        - Message
+      summary: Send templated broadcast message
+      description: Send a message using a template with personalization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - broadcast_id
+                - nokey
+                - account
+                - receiver
+                - template_id
+                - user_id
+              properties:
+                broadcast_id:
+                  type: string
+                nokey:
+                  type: string
+                account:
+                  type: string
+                receiver:
+                  type: string
+                template_id:
+                  type: string
+                user_id:
+                  type: string
+      responses:
+        "200":
+          description: Broadcast sent
+        "404":
+          description: Template or receiver not found
+        "429":
+          description: Rate limit exceeded
+
+  /message/send-bulk:
+    post:
+      tags:
+        - Message
+      summary: Send bulk text message
+      description: Send plain text to a single recipient (bulk variant)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - account
+                - receiver
+                - message
+                - user_id
+              properties:
+                account:
+                  type: string
+                receiver:
+                  type: string
+                message:
+                  type: string
+                user_id:
+                  type: string
+      responses:
+        "200":
+          description: Message sent
+        "429":
+          description: Rate limit exceeded
