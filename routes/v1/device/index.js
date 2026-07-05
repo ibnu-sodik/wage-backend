@@ -267,4 +267,78 @@ router.get('/pairing-code-status', async (req, res) => {
 	});
 });
 
+// Generate QR New
+router.get('/generate-qr', async (req, res) => {
+	const accountId = req.query.account || 'default';
+	const userId = req.query.userId || null;
+
+	const sessionPath = buildSessionPath(accountId, userId);
+
+	// Pastikan device sudah pernah didaftarkan
+	if (!fs.existsSync(sessionPath)) {
+		return res.status(404).json({
+			status: 'device_not_registered',
+			message: 'Folder session tidak ditemukan. Harus register device terlebih dahulu.',
+			account: accountId
+		});
+	}
+
+	// Ambil atau buat session
+	let session = getSession(accountId, userId) || await startSession(accountId, userId);
+
+	/** Sudah connect */
+	if (session.connected) {
+		return res.json({
+			status: 'connected',
+			account: accountId,
+			whatsapp_number: session.whatsapp_number
+		});
+	}
+
+	/** Jika QR sudah tersedia, kirim langsung */
+	if (session.qr) {
+		return res.json({
+			status: 'need_qr',
+			account: accountId,
+			qr: session.qr
+		});
+	}
+
+	/**
+	 * Tunggu QR muncul → up to 30s
+	 * Tidak agresif, 500ms interval
+	 */
+	const waitUntil = Date.now() + 30_000;
+
+	while (Date.now() < waitUntil) {
+		session = getSession(accountId, userId);
+
+		if (!session) break; // Session hilang? exit
+
+		if (session.connected) {
+			return res.json({
+				status: 'connected',
+				account: accountId,
+				whatsapp_number: session.whatsapp_number
+			});
+		}
+
+		if (session.qr) {
+			return res.json({
+				status: 'need_qr',
+				account: accountId,
+				qr: session.qr
+			});
+		}
+
+		await new Promise(r => setTimeout(r, 500));
+	}
+
+	return res.json({
+		status: 'waiting',
+		message: 'QR belum tersedia. Coba ulangi request.',
+		account: accountId
+	});
+});
+
 module.exports = router;

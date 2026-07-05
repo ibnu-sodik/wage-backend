@@ -13,6 +13,14 @@ router.use('/device', deviceRoutes);
 const messageRoutes = require('./message');
 router.use('/message', messageRoutes);
 
+// Mount session routes
+const sessionRoutes = require('./session');
+router.use('/session', sessionRoutes);
+
+// Mount contact routes
+const contactRoutes = require('./contact');
+router.use('/contact', contactRoutes);
+
 // Health endpoint for v1
 router.get('/health', (req, res) => {
 	res.json({
