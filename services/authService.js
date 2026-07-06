@@ -1,4 +1,4 @@
-const bcrypt = require('bcryptjs');
+const argon2 = require('argon2');
 const jwt = require('jsonwebtoken');
 const pool = require('../config/db');
 
@@ -184,8 +184,15 @@ async function loginUser(username, password, ip, userAgent) {
 		};
 	}
 
-	// Verify password
-	const passwordMatch = await bcrypt.compare(password, user.PASSWORD);
+	// Verify password using Argon2
+	let passwordMatch = false;
+	try {
+		passwordMatch = await argon2.verify(user.PASSWORD, password);
+	} catch (err) {
+		// If verification fails due to invalid hash format, password is incorrect
+		passwordMatch = false;
+	}
+	
 	if (!passwordMatch) {
 		await recordFailedAttempt(ip, username);
 		throw {
@@ -197,10 +204,22 @@ async function loginUser(username, password, ip, userAgent) {
 	// Clear login attempts
 	await clearAttempts(ip, username);
 
-	// Check if password needs rehash (cost factor changed)
-	const needsRehash = bcrypt.getRounds(user.PASSWORD) !== 10;
+	// Check if password needs rehash (security update)
+	// Argon2 will automatically detect if rehashing is needed
+	const needsRehash = await argon2.needsRehash(user.PASSWORD, {
+		type: argon2.argon2id,
+		memoryCost: 131072, // 128 MB (same as PHP: 1 << 17)
+		timeCost: 4,
+		parallelism: 2
+	});
+	
 	if (needsRehash) {
-		const newHash = await bcrypt.hash(password, 10);
+		const newHash = await argon2.hash(password, {
+			type: argon2.argon2id,
+			memoryCost: 131072,
+			timeCost: 4,
+			parallelism: 2
+		});
 		await pool.query('UPDATE sysuser SET PASSWORD = ? WHERE ID = ?', [newHash, user.USERID]);
 	}
 
