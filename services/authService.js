@@ -1,5 +1,6 @@
 const argon2 = require('argon2');
 const jwt = require('jsonwebtoken');
+const UAParser = require('ua-parser-js');
 const pool = require('../config/db');
 
 /**
@@ -104,10 +105,10 @@ function refreshToken(decodedData) {
  */
 async function getUserRoles(userId) {
 	const [rows] = await pool.query(
-		`SELECT r.ID as ROLEID, r.CODE as ROLECODE, r.NAME as ROLENAME
-		FROM user_role ur
-		JOIN role r ON ur.ROLE_ID = r.ID
-		WHERE ur.USER_ID = ? AND ur.IS_ACTIVE = 1`,
+		`SELECT r.ID as ROLEID, r.ROLECODE as ROLECODE, r.ROLENAME as ROLENAME
+		FROM sysuserrole ur
+		JOIN sysrole r ON ur.ROLE_ID = r.ID
+		WHERE ur.USER_ID = ?`,
 		[userId]
 	);
 	return rows;
@@ -120,12 +121,12 @@ async function getUserRoles(userId) {
  */
 async function getUserMenuPermissions(userId) {
 	const [rows] = await pool.query(
-		`SELECT DISTINCT m.ID as MENUID, m.NAME as MENUNAME, m.URL as MENUURL,
-		rp.CAN_VIEW, rp.CAN_CREATE, rp.CAN_UPDATE, rp.CAN_DELETE
-		FROM user_role ur
-		JOIN role_permission rp ON ur.ROLE_ID = rp.ROLE_ID
-		JOIN menu m ON rp.MENU_ID = m.ID
-		WHERE ur.USER_ID = ? AND ur.IS_ACTIVE = 1 AND rp.IS_ACTIVE = 1`,
+		`SELECT DISTINCT m.ID as MENUID, m.MENUNAME as MENUNAME, m.MENULINK as MENUURL,
+		rp.CAN_VIEW, rp.CAN_ADD as CAN_CREATE, rp.CAN_EDIT as CAN_UPDATE, rp.CAN_DELETE
+		FROM sysuserrole ur
+		JOIN sysrolemenupermission rp ON ur.ROLE_ID = rp.ROLE_ID
+		JOIN sysmenu m ON rp.MENU_ID = m.ID
+		WHERE ur.USER_ID = ?`,
 		[userId]
 	);
 	return rows;
@@ -135,13 +136,33 @@ async function getUserMenuPermissions(userId) {
  * Record login history
  * @param {object} userData - User data
  * @param {string} ip - IP address
- * @param {string} userAgent - User agent string
+ * @param {string} userAgentString - User agent string
  */
-async function recordLoginHistory(userData, ip, userAgent) {
+async function recordLoginHistory(userData, ip, userAgentString) {
+	// Parse user agent string to extract browser, OS, and device info
+	const parser = new UAParser(userAgentString);
+	const result = parser.getResult();
+	
+	// Format browser info (e.g., "Chrome 120.0")
+	const browser = result.browser.name 
+		? `${result.browser.name} ${result.browser.version || ''}`.trim() 
+		: 'Unknown';
+	
+	// Format OS info (e.g., "Windows 10")
+	const os = result.os.name 
+		? `${result.os.name} ${result.os.version || ''}`.trim() 
+		: 'Unknown';
+	
+	// Get device type (e.g., "mobile", "tablet", "desktop")
+	const device = result.device.type 
+		? result.device.type.charAt(0).toUpperCase() + result.device.type.slice(1)
+		: 'Desktop';
+	
+	// Insert into database with parsed user agent data
 	await pool.query(
-		`INSERT INTO user_login_history (USER_ID, IP_ADDRESS, USER_AGENT, LOGIN_AT) 
-		VALUES (?, ?, ?, NOW())`,
-		[userData.USERID, ip, userAgent || 'API Client']
+		`INSERT INTO user_login_history (ID, USER_ID, IP_ADDRESS, BROWSER, OS, DEVICE, CREATED_AT) 
+		VALUES (UUID(), ?, ?, ?, ?, ?, NOW())`,
+		[userData.USERID, ip, browser, os, device]
 	);
 }
 
