@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 
 const v1Routes = require('./routes/v1');
+const authRoutes = require('./routes/v1/auth');
 
 const crypto = require('crypto');
 global.crypto = crypto; // ensure crypto available for baileys environment
@@ -32,6 +33,9 @@ function createApp() {
 
 	app.use(express.json());
 	app.use(express.urlencoded({ extended: true }));
+
+	// Auth routes (no authentication required for login)
+	app.use('/api/v1/auth', authRoutes);
 
 	// API v1 routes (all endpoints now under /api/v1)
 	app.use('/api/v1', verifyToken, v1Routes);
