@@ -10,17 +10,32 @@ const pool = require('../config/db');
  */
 async function checkRateLimit(ip, username) {
 	const lockoutTime = 1200; // 20 minutes in seconds
-	const maxAttempts = 5;
+	const maxAttemptsPerAccount = 5; // Max attempts for specific username
+	const maxAttemptsPerIP = 15; // Max attempts from same IP across all accounts
 
-	const [rows] = await pool.query(
+	// Check attempts for this specific IP + username combination
+	const [accountRows] = await pool.query(
 		`SELECT COUNT(*) as attempts 
 		FROM login_attempts 
-		WHERE (ip_address = ? OR login = ?) 
+		WHERE ip_address = ? AND login = ? 
 		AND time > UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL ? SECOND))`,
 		[ip, username, lockoutTime]
 	);
 
-	return rows[0].attempts < maxAttempts;
+	if (accountRows[0].attempts >= maxAttemptsPerAccount) {
+		return false; // This specific account from this IP is blocked
+	}
+
+	// Check total attempts from this IP across all accounts
+	const [ipRows] = await pool.query(
+		`SELECT COUNT(*) as attempts 
+		FROM login_attempts 
+		WHERE ip_address = ? 
+		AND time > UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL ? SECOND))`,
+		[ip, lockoutTime]
+	);
+
+	return ipRows[0].attempts < maxAttemptsPerIP;
 }
 
 /**
