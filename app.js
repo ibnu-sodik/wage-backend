@@ -34,10 +34,11 @@ function createApp() {
 	app.use(express.json());
 	app.use(express.urlencoded({ extended: true }));
 
-	// Auth routes (no authentication required for login)
+	// Auth routes MUST be registered BEFORE the general /api/v1 route
+	// This ensures auth endpoints bypass the verifyToken middleware
 	app.use('/api/v1/auth', authRoutes);
 
-	// API v1 routes (all endpoints now under /api/v1)
+	// API v1 routes (all other endpoints require authentication)
 	app.use('/api/v1', verifyToken, v1Routes);
 
 	// Start background scheduler (if enabled)
