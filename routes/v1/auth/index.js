@@ -48,14 +48,34 @@ router.post('/login', async (req, res) => {
  */
 router.get('/me', async (req, res) => {
 	try {
-		// Token already verified by verifyToken middleware in app.js
-		// req.user contains the decoded token data
-		const userData = req.user;
+		// Since /auth routes bypass verifyToken middleware, we need to manually verify
+		const authHeader = req.headers['authorization'];
+		const token = authHeader && authHeader.split(' ')[1];
 
-		if (!userData || !userData.username) {
+		if (!token) {
 			return res.status(401).json({
 				status: 'error',
-				message: 'Invalid token data'
+				message: 'Token tidak ditemukan'
+			});
+		}
+
+		// Decode and verify token
+		let decoded;
+		try {
+			decoded = jwt.verify(token, process.env.JWT_SECRET, { 
+				algorithms: ['HS256']
+			});
+		} catch (error) {
+			return res.status(401).json({
+				status: 'error',
+				message: 'Token tidak valid atau sudah kadaluarsa'
+			});
+		}
+
+		if (!decoded.data || !decoded.data.username) {
+			return res.status(401).json({
+				status: 'error',
+				message: 'Data token tidak valid'
 			});
 		}
 
@@ -63,7 +83,7 @@ router.get('/me', async (req, res) => {
 		const pool = require('../../../config/db');
 		const [users] = await pool.query(
 			'SELECT ID FROM sysuser WHERE USERNAME = ? LIMIT 1',
-			[userData.username]
+			[decoded.data.username]
 		);
 
 		if (users.length === 0) {
