@@ -15,8 +15,8 @@ async function checkRateLimit(ip, username) {
 	const [rows] = await pool.query(
 		`SELECT COUNT(*) as attempts 
 		FROM login_attempts 
-		WHERE (ip_address = ? OR username = ?) 
-		AND attempt_time > DATE_SUB(NOW(), INTERVAL ? SECOND)`,
+		WHERE (ip_address = ? OR login = ?) 
+		AND time > UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL ? SECOND))`,
 		[ip, username, lockoutTime]
 	);
 
@@ -30,7 +30,7 @@ async function checkRateLimit(ip, username) {
  */
 async function recordFailedAttempt(ip, username) {
 	await pool.query(
-		'INSERT INTO login_attempts (ip_address, username, attempt_time) VALUES (?, ?, NOW())',
+		'INSERT INTO login_attempts (ip_address, login, time) VALUES (?, ?, UNIX_TIMESTAMP())',
 		[ip, username]
 	);
 }
@@ -42,7 +42,7 @@ async function recordFailedAttempt(ip, username) {
  */
 async function clearAttempts(ip, username) {
 	await pool.query(
-		'DELETE FROM login_attempts WHERE ip_address = ? OR username = ?',
+		'DELETE FROM login_attempts WHERE ip_address = ? OR login = ?',
 		[ip, username]
 	);
 }
