@@ -330,9 +330,30 @@ async function getUserInfo(userId) {
 	};
 }
 
+/**
+ * Logout user (invalidate session for account switching)
+ * @param {number} userId - User ID
+ * @param {string} reason - Reason for logout (optional)
+ * @returns {Promise<object>} - Logout result
+ */
+async function logoutUser(userId, reason = 'User logout') {
+	// Insert session invalidation record
+	await pool.query(
+		`INSERT INTO session_invalidation (USER_ID, REASON, CREATED_AT) 
+		VALUES (?, ?, NOW())`,
+		[userId, reason]
+	);
+
+	return {
+		success: true,
+		message: 'Logout berhasil. Sesi Anda telah dibatalkan.'
+	};
+}
+
 module.exports = {
 	loginUser,
 	getUserInfo,
 	generateToken,
-	refreshToken
+	refreshToken,
+	logoutUser
 };
