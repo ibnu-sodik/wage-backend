@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs').promises;
 const { buildSessionPath, getSession, startPairingSession, getPairingSession } = require('../../../services/sessionManager');
+const { checkDeviceExist } = require('../../../services/deviceService');
 
 router.post('/register', async (req, res) => {
 	const { account, userId } = req.body;
@@ -16,6 +17,13 @@ router.post('/register', async (req, res) => {
 		return res.status(400).json({
 			status: 'error', message: 'user ID is required'
 		})
+	}
+
+	if (!await checkDeviceExist(account, userId)) {
+		return res.status(404).json({
+			status: 'error',
+			message: 'Device not found. Please register the device first.'
+		});
 	}
 
 	const sessionPath = buildSessionPath(account, userId);
