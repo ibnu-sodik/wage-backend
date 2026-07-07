@@ -9,7 +9,8 @@ const pool = mysql.createPool({
 	database: process.env.DB_NAME,
 	waitForConnections: true,
 	connectionLimit: parseInt(process.env.DB_POOL_LIMIT),
-	queueLimit: 0
+	queueLimit: 0,
+	timezone: '+07:00' // Set timezone to Asia/Jakarta (WIB) to match PHP/CodeIgniter
 });
 
 module.exports = pool;

@@ -357,6 +357,9 @@ function startScheduler() {
   }
   if (_timer) return; // already started
   console.log("[SCHED] Starting scheduler. Poll interval:", POLL_INTERVAL_MS);
+  console.log("[SCHED] Database timezone: +07:00 (Asia/Jakarta/WIB)");
+  console.log("[SCHED] Current time (UTC):", new Date().toISOString());
+  console.log("[SCHED] Current time (WIB):", new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }));
   _timer = setInterval(() => {
     void poll();
   }, POLL_INTERVAL_MS);
