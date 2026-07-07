@@ -47,11 +47,24 @@ async function processHeader(row) {
     [ID, USER_ID],
   );
   if (!details.length) {
-    // nothing to do; mark header as sent
-    await db.query(
-      "UPDATE scbchd SET STATUS = ? WHERE ID = ? AND USER_ID = ?",
-      ["sent", ID, USER_ID],
+    // Check if there are ANY details at all (including already sent/failed)
+    const [[totalCheck]] = await db.query(
+      "SELECT COUNT(*) AS total FROM scbcdt WHERE ID = ? AND USER_ID = ?",
+      [ID, USER_ID],
     );
+    const totalDetails = totalCheck.total || 0;
+
+    if (totalDetails > 0) {
+      // All details already processed (none pending), mark header as sent
+      console.log("[SCHED] All details processed for header", ID, "- marking as sent");
+      await db.query(
+        "UPDATE scbchd SET STATUS = ? WHERE ID = ? AND USER_ID = ?",
+        ["sent", ID, USER_ID],
+      );
+    } else {
+      // No details yet - keep header as 'scheduled' so it will be picked up again later
+      console.log("[SCHED] No details found for header", ID, "- keeping as scheduled for next poll");
+    }
     return;
   }
 
@@ -287,6 +300,13 @@ async function processHeader(row) {
   }
 
   // Re-evaluate header status
+  // NOTE: When using job queue, don't update header status here.
+  // The queue worker will update status after processing each job.
+  if (USE_QUEUE && queueModule) {
+    console.log("[SCHED] Using job queue - header status will be updated by queue worker");
+    return;
+  }
+
   try {
     const [[counts]] = await db.query(
       "SELECT SUM(CASE WHEN IS_SENT = 1 THEN 1 ELSE 0 END) AS sent_count, SUM(CASE WHEN IS_SENT = 2 THEN 1 ELSE 0 END) AS fail_count, COUNT(*) AS total_count FROM scbcdt WHERE ID = ? AND USER_ID = ?",

@@ -1,10 +1,13 @@
 FROM node:20-alpine
 
+# Install git (needed by some npm packages like @whiskeysockets/baileys)
+RUN apk add --no-cache git
+
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install --production
 
 # Copy application
 COPY . .

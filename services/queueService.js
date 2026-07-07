@@ -13,8 +13,30 @@ const RATE_MAX_MS = parseInt(process.env.SCHEDULER_RATE_MAX_MS) || 1000;
 
 const queue = new Queue(QUEUE_NAME, REDIS_URL);
 
+// Log queue connection status
+queue.on('ready', () => {
+    console.log('[QUEUE] Redis queue connected and ready');
+});
+
+queue.on('error', (err) => {
+    console.error('[QUEUE] Redis queue error:', err.message);
+});
+
+queue.on('active', (job, jobPromise) => {
+    console.log(`[QUEUE] Job ${job.id} started processing`);
+});
+
+queue.on('completed', (job, result) => {
+    console.log(`[QUEUE] Job ${job.id} completed successfully`);
+});
+
+queue.on('failed', (job, err) => {
+    console.error(`[QUEUE] Job ${job.id} failed:`, err.message);
+});
+
 // Add a job for single recipient send
 function addRecipientJob({ headerId, nokey, deviceId, userId, messageType, messageText, templateId }) {
+    console.log(`[QUEUE] Enqueuing job for header ${headerId}, nokey ${nokey}`);
     return queue.add(
         'send-recipient',
         { headerId, nokey, deviceId, userId, messageType, messageText, templateId },
@@ -27,24 +49,34 @@ function addRecipientJob({ headerId, nokey, deviceId, userId, messageType, messa
     );
 }
 
-// Worker — Bull v1.x process(concurrency, fn) only, no 3-arg overload
-queue.process(QUEUE_CONCURRENCY, async (job) => {
-    if (job.name !== 'send-recipient') return;
+// Worker — Bull v4.x: named processor must match the job name used in queue.add()
+queue.process('send-recipient', QUEUE_CONCURRENCY, async (job) => {
+    console.log(`[QUEUE-WORKER] Processing job id=${job.id}, name=${job.name}`);
+    console.log(`[QUEUE-WORKER] Job data:`, JSON.stringify(job.data));
+
+    if (job.name !== 'send-recipient') {
+        console.log(`[QUEUE-WORKER] Skipping job with name: ${job.name}`);
+        return;
+    }
     const data = job.data;
     const { headerId, nokey, deviceId, userId, messageType, messageText, templateId } = data;
 
     // load detail row
     const [[detailRow]] = await db.query('SELECT * FROM scbcdt WHERE ID = ? AND NOKEY = ? AND USER_ID = ?', [headerId, nokey, userId]);
     if (!detailRow) {
-        // nothing to do
-        return Promise.resolve();
+        console.log(`[QUEUE-WORKER] No detail row found for header=${headerId}, nokey=${nokey}`);
+        return;
     }
+    console.log(`[QUEUE-WORKER] Detail found: IS_SENT=${detailRow.IS_SENT}, receiver=${detailRow.CONTACT_NUMBER}`);
 
     // Ensure session
     let session = getSession(deviceId, userId);
-    try { session = await startSession(deviceId, userId); } catch (e) { /* continue */ }
+    try { session = await startSession(deviceId, userId); } catch (e) { console.log(`[QUEUE-WORKER] startSession error: ${e.message}`); }
+
+    console.log(`[QUEUE-WORKER] Session connected: ${session ? session.connected : 'null'}`);
 
     if (!session || !session.connected) {
+        console.log(`[QUEUE-WORKER] Session not connected for device=${deviceId}, user=${userId}`);
         throw new Error('device not connected');
     }
 
