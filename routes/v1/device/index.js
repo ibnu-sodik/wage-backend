@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const fs = require('fs').promises;
-const { buildSessionPath, getSession, startPairingSession, getPairingSession } = require('../../../services/sessionManager');
+const fsSync = require('fs');
+const { buildSessionPath, getSession, startSession, startPairingSession, getPairingSession } = require('../../../services/sessionManager');
 const { checkDeviceExist } = require('../../../services/deviceService');
 
 router.post('/register', async (req, res) => {
@@ -283,7 +284,7 @@ router.get('/generate-qr', async (req, res) => {
 	const sessionPath = buildSessionPath(accountId, userId);
 
 	// Pastikan device sudah pernah didaftarkan
-	if (!fs.existsSync(sessionPath)) {
+	if (!fsSync.existsSync(sessionPath)) {
 		return res.status(404).json({
 			status: 'device_not_registered',
 			message: 'Folder session tidak ditemukan. Harus register device terlebih dahulu.',
@@ -313,10 +314,11 @@ router.get('/generate-qr', async (req, res) => {
 	}
 
 	/**
-	 * Tunggu QR muncul → up to 30s
+	 * Tunggu QR muncul → up to 20s
 	 * Tidak agresif, 500ms interval
+	 * Timeout lebih kecil dari PHP timeout (30s) untuk menghindari connection timeout
 	 */
-	const waitUntil = Date.now() + 30_000;
+	const waitUntil = Date.now() + 20_000;
 
 	while (Date.now() < waitUntil) {
 		session = getSession(accountId, userId);
