@@ -2,7 +2,8 @@ const {
 	default: makeWASocket,
 	useMultiFileAuthState,
 	DisconnectReason,
-	fetchLatestBaileysVersion
+	fetchLatestBaileysVersion,
+	Browsers
 } = require("@whiskeysockets/baileys");
 
 const fs = require("fs");
@@ -76,7 +77,7 @@ async function startSession(accountId, userId, retryCount = 0) {
 			auth: authState,
 			logger: P({ level: "silent" }),
 			printQRInTerminal: false,
-			browser: getRandomBrowser(),
+			browser: Browsers.ubuntu('Chrome'),
 			version: versionInfo?.version,
 			syncFullHistory: false
 		});
@@ -299,7 +300,7 @@ async function startPairingSession(accountId, userId, phoneNumber) {
 		auth: authState,
 		logger: P({ level: 'silent' }),
 		printQRInTerminal: false,
-		browser: getRandomBrowser(),
+		browser: Browsers.ubuntu('Chrome'),
 		version: versionInfo?.version,
 		syncFullHistory: false,
 		markOnlineOnConnect: false,
@@ -349,6 +350,17 @@ async function startPairingSession(accountId, userId, phoneNumber) {
 				delete sessions[sessionKey];
 				delete pairingSessions[sessionKey];
 				pairingResolve({ status: 'logged_out' });
+				return;
+			}
+
+			// restartRequired (515) — restart socket after pairing to load new creds
+			if (closeCode === DisconnectReason.restartRequired) {
+				console.log(`[PAIR][${sessionKey}] Restart required after pairing, restarting session...`);
+				delete sessions[sessionKey];
+				delete pairingSessions[sessionKey];
+				pairingResolve({ status: 'restarting' });
+				// Wait 2s for creds to finish writing before restart
+				setTimeout(() => startSession(accountId, userId), 2000);
 				return;
 			}
 
@@ -407,7 +419,11 @@ async function startPairingSession(accountId, userId, phoneNumber) {
 	let code = null;
 	try {
 		await wsReady;
-		console.log(`[PAIR][${sessionKey}] WebSocket ready, requesting pairing code for ${phoneNumber}`);
+		console.log(`[PAIR][${sessionKey}] WebSocket ready, waiting 3s before requesting pairing code for ${phoneNumber}`);
+		
+		// Wait 3 seconds after WebSocket open before requesting pairing code
+		// This gives WhatsApp server time to fully initialize the session
+		await new Promise(resolve => setTimeout(resolve, 3000));
 
 		if (!authState.creds.registered) {
 			code = await sock.requestPairingCode(phoneNumber);
