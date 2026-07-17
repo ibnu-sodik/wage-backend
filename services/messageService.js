@@ -73,7 +73,7 @@ async function sendTemplatedMessage({ session, templateRow, receiverRow, senderR
 		// Jika ada kolom nomor kontak pengirim (belum ada di query sekarang), fallback ke email.
 		my_contact_number: senderRow.CONTACT_NUMBER || senderRow.EMAIL || '',
 	};
-	const finalMessage = applyPlaceholders(templateContent, placeholders);
+	const finalMessage = applyPlaceholders(templateContent || '', placeholders);
 	const numberWA = receiver.includes('@s.whatsapp.net') ? receiver : receiver + '@s.whatsapp.net';
 
 	let sentMsg;
@@ -132,19 +132,22 @@ async function sendTemplatedMessage({ session, templateRow, receiverRow, senderR
 	} else if (type === 'poll') {
 		const options = JSON.parse(TEMP_BUTTONS || '{}');
 		const pollName = finalMessage || options.name || 'Poll';
-		const values = options.options || options.values || [];
-		if (!Array.isArray(values) || values.length < 2) throw new Error('Poll requires at least 2 options in TEMP_BUTTONS.options');
+		const rawValues = options.options || options.values || [];
+		if (!Array.isArray(rawValues) || rawValues.length < 2) throw new Error('Poll requires at least 2 options in TEMP_BUTTONS.options');
+		// DB stores [{name:"..."},...]; WhatsApp expects string[]
+		const values = rawValues.map(v => (typeof v === 'string' ? v : v.name || v.title || ''));
 		const selectableCount = parseInt(options.selectableCount ?? 1);
 		sentMsg = await session.socket.sendMessage(numberWA, {
 			poll: { name: pollName, values, selectableCount }
 		});
 	} else if (type === 'location') {
 		const options = JSON.parse(TEMP_BUTTONS || '{}');
-		if (!options.lat || !options.lng) throw new Error('Location requires TEMP_BUTTONS.lat and TEMP_BUTTONS.lng');
+		const longitude = options.lng || options.long;
+		if (!options.lat || !longitude) throw new Error('Location requires TEMP_BUTTONS.lat and TEMP_BUTTONS.lng (or long)');
 		sentMsg = await session.socket.sendMessage(numberWA, {
 			location: {
 				degreesLatitude: parseFloat(options.lat),
-				degreesLongitude: parseFloat(options.lng),
+				degreesLongitude: parseFloat(longitude),
 				name: options.name || finalMessage || '',
 				address: options.address || ''
 			}
