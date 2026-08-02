@@ -79,7 +79,9 @@ async function startSession(accountId, userId, retryCount = 0) {
 			printQRInTerminal: false,
 			browser: Browsers.ubuntu('Chrome'),
 			version: versionInfo?.version,
-			syncFullHistory: false
+			syncFullHistory: false,
+			markOnlineOnConnect: false,
+			generateHighQualityLinkPreview: false,
 		});
 
 		sessions[sessionKey] = {
